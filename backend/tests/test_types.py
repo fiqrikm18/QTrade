@@ -1,3 +1,5 @@
+from datetime import date
+
 from app.domain.common.types import Quote, UniverseItem
 from app.domain.market.interfaces import MarketDataProvider
 
@@ -12,7 +14,7 @@ def test_universe_item_typed():
 def test_quote_typed():
     q = Quote(ticker="BBCA", price=9125.0, change=128.0, volume=2_000_000,
               turnover=18_250_000_000.0, market_cap=1_176_000_000_000.0,
-              asof="2026-08-11")
+              asof=date(2026, 8, 11))
     assert q.price > 0
 
 

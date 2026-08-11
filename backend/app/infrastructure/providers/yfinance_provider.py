@@ -103,9 +103,7 @@ class YFinanceProvider(MarketDataProvider):
         info: Any = dict(tk.fast_info)  # FastInfo is dict-like
         price = float(info.get("lastPrice") or 0.0)
         prev = float(
-            info.get("previousClose")
-            or info.get("regularMarketPreviousClose")
-            or price
+            info.get("previousClose") or info.get("regularMarketPreviousClose") or price
         )
         change = price - prev
         volume = int(info.get("lastVolume") or info.get("tenDayAverageVolume") or 0)

@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     data_dir: str = "./data"
     market_data_provider: str = "yfinance"
+    ingest_cron: str = "15 16 * * 1-5"
+    watchdog_cron: str = "*/30 * * * *"
 
     # AI feature flags (PRD §33) — default OFF for deterministic-first
     ml_enabled: bool = False

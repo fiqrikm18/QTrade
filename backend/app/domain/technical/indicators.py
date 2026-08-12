@@ -7,18 +7,35 @@ rolling windows only look at current and past rows. Warm-up rows are null.
 from __future__ import annotations
 
 import math
+from typing import overload
 
 import polars as pl
 
 _TRADING_DAYS = 252
 
 
-def sma(close: pl.Series, n: int) -> pl.Series:
+@overload
+def sma(close: pl.Series, n: int) -> pl.Series: ...
+
+
+@overload
+def sma(close: pl.Expr, n: int) -> pl.Expr: ...
+
+
+def sma(close: pl.Series | pl.Expr, n: int) -> pl.Series | pl.Expr:
     """Simple moving average of `close` over `n` rows."""
     return close.rolling_mean(n, min_samples=n)
 
 
-def ema(close: pl.Series, n: int) -> pl.Series:
+@overload
+def ema(close: pl.Series, n: int) -> pl.Series: ...
+
+
+@overload
+def ema(close: pl.Expr, n: int) -> pl.Expr: ...
+
+
+def ema(close: pl.Series | pl.Expr, n: int) -> pl.Series | pl.Expr:
     """Exponential moving average, alpha=2/(n+1), seeded after `n` samples."""
     return close.ewm_mean(alpha=2 / (n + 1), min_samples=n)
 
@@ -83,7 +100,15 @@ def bollinger(
     return upper, mid, lower
 
 
-def roc(close: pl.Series, n: int) -> pl.Series:
+@overload
+def roc(close: pl.Series, n: int) -> pl.Series: ...
+
+
+@overload
+def roc(close: pl.Expr, n: int) -> pl.Expr: ...
+
+
+def roc(close: pl.Series | pl.Expr, n: int) -> pl.Series | pl.Expr:
     """Rate of change: 100 * (C/C_{t-n} - 1)."""
     return 100.0 * (close / close.shift(n) - 1.0)
 

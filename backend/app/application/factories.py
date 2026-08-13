@@ -8,6 +8,4 @@ from app.infrastructure.providers.yfinance_provider import YFinanceProvider
 def build_market_provider(settings: Settings) -> MarketDataProvider:
     if settings.market_data_provider == "yfinance":
         return YFinanceProvider()
-    raise NotImplementedError(
-        f"unknown provider {settings.market_data_provider}"
-    )
+    raise NotImplementedError(f"unknown provider {settings.market_data_provider}")

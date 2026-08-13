@@ -66,77 +66,85 @@ def _trailing_feature_df(
     combined: pl.DataFrame,
 ) -> pl.DataFrame:
     """Per-stock trailing features (no look-ahead) aligned to stock rows."""
-    return combined.with_columns(
-        [
-            pl.col("close").shift(1).over("ticker").alias("prev_close"),
-            sma(pl.col("close"), 20).over("ticker").alias("sma20"),
-            sma(pl.col("close"), 50).over("ticker").alias("sma50"),
-            sma(pl.col("close"), 200).over("ticker").alias("sma200"),
-            pl.col("close")
-            .map_batches(lambda s: rsi(s), return_dtype=pl.Float64)
-            .over("ticker")
-            .alias("rsi14"),
-            roc(pl.col("close"), _ROC_N).over("ticker").alias("roc20"),
-            pl.col("high")
-            .rolling_max(_WEEK_52, min_samples=_WEEK_52)
-            .over("ticker")
-            .alias("high_52w"),
-            pl.col("low")
-            .rolling_min(_WEEK_52, min_samples=_WEEK_52)
-            .over("ticker")
-            .alias("low_52w"),
-            pl.col("high")
-            .shift(1)
-            .rolling_max(_BREAKOUT_LOOKBACK, min_samples=_BREAKOUT_LOOKBACK)
-            .over("ticker")
-            .alias("prior_high_20d"),
-        ]
-    ).with_columns(
-        [
-            pl.col("close").gt(pl.col("prev_close")).alias("is_up"),
-            pl.col("close").lt(pl.col("prev_close")).alias("is_down"),
-            pl.col("close").gt(pl.col("sma20")).alias("above_sma20"),
-            pl.col("close").gt(pl.col("sma50")).alias("above_sma50"),
-            pl.col("close").gt(pl.col("sma200")).alias("above_sma200"),
-            pl.col("rsi14").gt(50.0).alias("rsi_above_50"),
-            pl.col("high").eq(pl.col("high_52w")).alias("is_new_high"),
-            pl.col("low").eq(pl.col("low_52w")).alias("is_new_low"),
-            (
-                pl.col("close").gt(pl.col("sma20"))
-                & pl.col("close").gt(pl.col("prior_high_20d"))
-            ).alias("is_breakout"),
-            pl.col("roc20").gt(0.0).alias("is_momentum"),
-        ]
-    ).with_columns(
-        [
-            pl.when(pl.col("is_up").is_not_null())
-            .then(pl.col("volume"))
-            .otherwise(None)
-            .alias("advancing_volume"),
-            pl.when(pl.col("is_up").is_not_null())
-            .then(pl.col("volume"))
-            .otherwise(None)
-            .alias("traded_volume"),
-        ]
+    return (
+        combined.with_columns(
+            [
+                pl.col("close").shift(1).over("ticker").alias("prev_close"),
+                sma(pl.col("close"), 20).over("ticker").alias("sma20"),
+                sma(pl.col("close"), 50).over("ticker").alias("sma50"),
+                sma(pl.col("close"), 200).over("ticker").alias("sma200"),
+                pl.col("close")
+                .map_batches(lambda s: rsi(s), return_dtype=pl.Float64)
+                .over("ticker")
+                .alias("rsi14"),
+                roc(pl.col("close"), _ROC_N).over("ticker").alias("roc20"),
+                pl.col("high")
+                .rolling_max(_WEEK_52, min_samples=_WEEK_52)
+                .over("ticker")
+                .alias("high_52w"),
+                pl.col("low")
+                .rolling_min(_WEEK_52, min_samples=_WEEK_52)
+                .over("ticker")
+                .alias("low_52w"),
+                pl.col("high")
+                .shift(1)
+                .rolling_max(_BREAKOUT_LOOKBACK, min_samples=_BREAKOUT_LOOKBACK)
+                .over("ticker")
+                .alias("prior_high_20d"),
+            ]
+        )
+        .with_columns(
+            [
+                pl.col("close").gt(pl.col("prev_close")).alias("is_up"),
+                pl.col("close").lt(pl.col("prev_close")).alias("is_down"),
+                pl.col("close").gt(pl.col("sma20")).alias("above_sma20"),
+                pl.col("close").gt(pl.col("sma50")).alias("above_sma50"),
+                pl.col("close").gt(pl.col("sma200")).alias("above_sma200"),
+                pl.col("rsi14").gt(50.0).alias("rsi_above_50"),
+                pl.col("high").eq(pl.col("high_52w")).alias("is_new_high"),
+                pl.col("low").eq(pl.col("low_52w")).alias("is_new_low"),
+                (
+                    pl.col("close").gt(pl.col("sma20"))
+                    & pl.col("close").gt(pl.col("prior_high_20d"))
+                ).alias("is_breakout"),
+                pl.col("roc20").gt(0.0).alias("is_momentum"),
+            ]
+        )
+        .with_columns(
+            [
+                pl.when(pl.col("is_up").is_not_null())
+                .then(pl.col("volume"))
+                .otherwise(None)
+                .alias("advancing_volume"),
+                pl.when(pl.col("is_up").is_not_null())
+                .then(pl.col("volume"))
+                .otherwise(None)
+                .alias("traded_volume"),
+            ]
+        )
     )
 
 
 def _aggregate_by_date(f: pl.DataFrame) -> pl.DataFrame:
-    return f.group_by("trade_date", maintain_order=True).agg(
-        pl.col("is_up").sum().cast(pl.Int64).alias("advance"),
-        pl.col("is_down").sum().cast(pl.Int64).alias("decline"),
-        pl.col("is_new_high").sum().cast(pl.Int64).alias("new_highs"),
-        pl.col("is_new_low").sum().cast(pl.Int64).alias("new_lows"),
-        pl.col("above_sma20").mean().alias("pct_above_sma20"),
-        pl.col("above_sma50").mean().alias("pct_above_sma50"),
-        pl.col("above_sma200").mean().alias("pct_above_sma200"),
-        pl.col("rsi_above_50").mean().alias("rsi_breadth"),
-        (
-            pl.col("advancing_volume").sum() / pl.col("traded_volume").sum()
-        ).alias("volume_breadth"),
-        pl.col("is_breakout").mean().alias("breakout_breadth"),
-        pl.col("is_momentum").mean().alias("momentum_breadth"),
-    ).sort("trade_date")
+    return (
+        f.group_by("trade_date", maintain_order=True)
+        .agg(
+            pl.col("is_up").sum().cast(pl.Int64).alias("advance"),
+            pl.col("is_down").sum().cast(pl.Int64).alias("decline"),
+            pl.col("is_new_high").sum().cast(pl.Int64).alias("new_highs"),
+            pl.col("is_new_low").sum().cast(pl.Int64).alias("new_lows"),
+            pl.col("above_sma20").mean().alias("pct_above_sma20"),
+            pl.col("above_sma50").mean().alias("pct_above_sma50"),
+            pl.col("above_sma200").mean().alias("pct_above_sma200"),
+            pl.col("rsi_above_50").mean().alias("rsi_breadth"),
+            (pl.col("advancing_volume").sum() / pl.col("traded_volume").sum()).alias(
+                "volume_breadth"
+            ),
+            pl.col("is_breakout").mean().alias("breakout_breadth"),
+            pl.col("is_momentum").mean().alias("momentum_breadth"),
+        )
+        .sort("trade_date")
+    )
 
 
 def _breadth_score_col(df: pl.DataFrame, weights: BreadthWeights) -> pl.DataFrame:

@@ -67,9 +67,7 @@ def test_normalize_yfinance_frame():
 
 
 def test_normalize_drops_nan_rows_and_raises_when_empty():
-    idx = pd.DatetimeIndex(
-        [datetime(2024, 2, 1), datetime(2024, 2, 2)], name="Date"
-    )
+    idx = pd.DatetimeIndex([datetime(2024, 2, 1), datetime(2024, 2, 2)], name="Date")
     raw = pd.DataFrame(
         {
             "Open": [None, 1.0],

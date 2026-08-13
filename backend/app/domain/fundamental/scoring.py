@@ -94,9 +94,7 @@ def fundamental_score(
     profitability, profit_comps = _profitability(ratios, benchmark)
     growth, growth_comps = _growth(history_ratios)
     health, health_comps = _health(ratios, benchmark)
-    valuation, valuation_comps = _valuation(
-        ratios, benchmark, profitability, health
-    )
+    valuation, valuation_comps = _valuation(ratios, benchmark, profitability, health)
 
     quality_raw = _blend([(profitability, 0.5), (health, 0.5)])
     quality = _clamp(quality_raw if quality_raw is not None else 50.0)
@@ -138,7 +136,11 @@ def _profitability(
     ratios: RatioSet, benchmark: list[RatioSet]
 ) -> tuple[float, ComponentMap]:
     metrics: dict[str, float] = {
-        "roe": 0.30, "roic": 0.25, "npm": 0.25, "gpm": 0.10, "opm": 0.10,
+        "roe": 0.30,
+        "roic": 0.25,
+        "npm": 0.25,
+        "gpm": 0.10,
+        "opm": 0.10,
     }
     pcts: dict[str, float | None] = {
         name: _pct(ratios, name, benchmark) for name in metrics
@@ -146,13 +148,12 @@ def _profitability(
     blended = _blend([(pcts[n], w) for n, w in metrics.items()])
     score = _clamp(blended) if blended is not None else 50.0
 
-    penalties = sum(
-        1 for m in (ratios.npm, ratios.opm) if m is not None and m < 0
-    )
+    penalties = sum(1 for m in (ratios.npm, ratios.opm) if m is not None and m < 0)
     if penalties:
         score = _clamp(score - 25.0 * penalties)
     note = (
-        f"negative margin penalty applied ({penalties})" if penalties
+        f"negative margin penalty applied ({penalties})"
+        if penalties
         else "percentile vs sector+history; positive margins"
     )
     comps: ComponentMap = {f"{n}_pct": pcts[n] for n in metrics}
@@ -172,9 +173,7 @@ def _growth(history_ratios: list[RatioSet]) -> tuple[float, ComponentMap]:
     return 50.0, comps
 
 
-def _health(
-    ratios: RatioSet, benchmark: list[RatioSet]
-) -> tuple[float, ComponentMap]:
+def _health(ratios: RatioSet, benchmark: list[RatioSet]) -> tuple[float, ComponentMap]:
     de_pct = _pct(ratios, "debt_equity", benchmark)
     cr_pct = _pct(ratios, "current_ratio", benchmark)
     ic_pct = _pct(ratios, "interest_coverage", benchmark)

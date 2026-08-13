@@ -45,9 +45,7 @@ def test_per_roe_roic():
     r = calculate_ratios(snap, price=100.0, shares_outstanding=10.0)
     assert r.per == 10.0
     assert r.roe == pytest.approx(0.2)
-    assert r.roic == pytest.approx(
-        150.0 * (1.0 - _TAX_EST) / (500.0 + 200.0 - 50.0)
-    )
+    assert r.roic == pytest.approx(150.0 * (1.0 - _TAX_EST) / (500.0 + 200.0 - 50.0))
 
 
 def test_division_by_zero_returns_none():
@@ -106,6 +104,7 @@ def test_latest_snapshot_tie_breaks_period_end():
         period_end=date(2024, 6, 30),
     )
     assert latest_snapshot([q1, q2], t) is q2
+
 
 def test_future_snapshot_raises():
     snap = _snap(

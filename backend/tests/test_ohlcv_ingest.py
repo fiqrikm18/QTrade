@@ -71,8 +71,13 @@ def test_validate_ohlcv_flags_bad_rows() -> None:
     # issues dict mentions each defect family
     assert report.issues
     issues = set(report.issues)
-    for key in ("duplicates", "high_below_low", "non_positive_price",
-                "non_positive_volume", "missing_days"):
+    for key in (
+        "duplicates",
+        "high_below_low",
+        "non_positive_price",
+        "non_positive_volume",
+        "missing_days",
+    ):
         assert key in issues
     assert report.issues["duplicates"] >= 1
     assert report.issues["high_below_low"] >= 1
@@ -124,7 +129,10 @@ async def test_ingest_ohlcv_idempotent_and_drops_bad() -> None:
         try:
             # only the 1 good row should survive validation -> 1 DB row
             written, report = await ingest_ohlcv(
-                _TICKER, date(2024, 1, 1), date(2024, 1, 31), session,
+                _TICKER,
+                date(2024, 1, 1),
+                date(2024, 1, 31),
+                session,
                 provider=_FakeProvider(frame),
             )
             assert written == 1
@@ -145,7 +153,10 @@ async def test_ingest_ohlcv_idempotent_and_drops_bad() -> None:
 
             # second insert must not grow the row count (upsert idempotent)
             written2, _ = await ingest_ohlcv(
-                _TICKER, date(2024, 1, 1), date(2024, 1, 31), session,
+                _TICKER,
+                date(2024, 1, 1),
+                date(2024, 1, 31),
+                session,
                 provider=_FakeProvider(frame),
             )
             assert written2 == 1

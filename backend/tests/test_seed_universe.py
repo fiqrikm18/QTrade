@@ -12,7 +12,12 @@ from app.infrastructure.database.session import get_session
 FIXTURE_TICKERS = ("AALI", "ABBA")
 
 HEADER = [
-    "No", "Kode", "Nama Perusahaan", "Tanggal Pencatatan", "Saham", "Papan Pencatatan"
+    "No",
+    "Kode",
+    "Nama Perusahaan",
+    "Tanggal Pencatatan",
+    "Saham",
+    "Papan Pencatatan",
 ]
 
 
@@ -20,10 +25,19 @@ def _write_fixture(path: Path) -> Path:
     wb = Workbook()
     ws = wb.active
     ws.append(HEADER)
-    ws.append([1, "AALI", "Astra Agro Lestari Tbk.", "09 Des 1997",
-               "1.924.688.333", "Utama"])
-    ws.append([2, "ABBA", "Mahaka Media Tbk.", "03 Apr 2002",
-               "3.935.892.857", "Pemantauan Khusus"])
+    ws.append(
+        [1, "AALI", "Astra Agro Lestari Tbk.", "09 Des 1997", "1.924.688.333", "Utama"]
+    )
+    ws.append(
+        [
+            2,
+            "ABBA",
+            "Mahaka Media Tbk.",
+            "03 Apr 2002",
+            "3.935.892.857",
+            "Pemantauan Khusus",
+        ]
+    )
     ws.append([3, "", "", "01 Jan 2020", "1.000", "Pengembangan"])
     wb.save(path)
     return path
@@ -70,7 +84,9 @@ async def test_seed_universe_idempotent(tmp_path):
 async def _counts(session) -> tuple[int, int]:
     stocks = (
         await session.execute(
-            select(func.count()).select_from(Stock).where(Stock.ticker.in_(FIXTURE_TICKERS))
+            select(func.count())
+            .select_from(Stock)
+            .where(Stock.ticker.in_(FIXTURE_TICKERS))
         )
     ).scalar_one()
     history = (

@@ -32,15 +32,11 @@ def _frame(closes: pl.Series) -> pl.DataFrame:
 
 
 def _rising(n: int = 260, daily: float = 0.0009, base: float = 1000.0) -> pl.Series:
-    return pl.Series(
-        [base * (1 + daily) ** i + math.sin(i / 9.0) for i in range(n)]
-    )
+    return pl.Series([base * (1 + daily) ** i + math.sin(i / 9.0) for i in range(n)])
 
 
 def _falling(n: int = 260, daily: float = 0.0009, base: float = 1000.0) -> pl.Series:
-    return pl.Series(
-        [base * (1 - daily) ** i + math.sin(i / 9.0) for i in range(n)]
-    )
+    return pl.Series([base * (1 - daily) ** i + math.sin(i / 9.0) for i in range(n)])
 
 
 def _sideways(n: int = 260, base: float = 1000.0) -> pl.Series:

@@ -59,16 +59,20 @@ def test_leading_vs_lagging():
 def test_improving_weakening():
     rising = {"tech": _ohlcv("A", 10.0, 1.001)}
     fast_rising_index = _index(7000.0, 1.002)
-    improving = sector_score(rising, fast_rising_index).filter(
-        pl.col("sector") == "tech"
-    )["rotation_class"].tail(1)[0]
+    improving = (
+        sector_score(rising, fast_rising_index)
+        .filter(pl.col("sector") == "tech")["rotation_class"]
+        .tail(1)[0]
+    )
     assert improving == "improving"
 
     falling = {"energy": _ohlcv("B", 20.0, 0.999)}
     fast_falling_index = _index(7000.0, 0.998)
-    weakening = sector_score(falling, fast_falling_index).filter(
-        pl.col("sector") == "energy"
-    )["rotation_class"].tail(1)[0]
+    weakening = (
+        sector_score(falling, fast_falling_index)
+        .filter(pl.col("sector") == "energy")["rotation_class"]
+        .tail(1)[0]
+    )
     assert weakening == "weakening"
 
 

@@ -8,13 +8,17 @@ def test_audit_mixin_present():
 
 
 def test_ohlcv_unique_constraint():
-    uq = {c.name for c in OhlcvDaily.__table__.constraints
-          if getattr(c, "columns", None) and
-          {col.name for col in c.columns} >= {"ticker", "trade_date"}}
+    uq = {
+        c.name
+        for c in OhlcvDaily.__table__.constraints
+        if getattr(c, "columns", None)
+        and {col.name for col in c.columns} >= {"ticker", "trade_date"}
+    }
     assert uq, "expected (ticker, trade_date) unique"
 
 
 def test_stock_sector_fk():
-    assert any(getattr(fk, "column", None) is not None and
-               fk.parent.name == "sector_id"
-               for fk in Stock.__table__.foreign_keys)
+    assert any(
+        getattr(fk, "column", None) is not None and fk.parent.name == "sector_id"
+        for fk in Stock.__table__.foreign_keys
+    )

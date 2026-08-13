@@ -132,9 +132,7 @@ def _proxies_for_ticker(grp: pl.DataFrame) -> pl.DataFrame:
         pl.Series("_ret_20", ret_20),
     )
 
-    rel_volume_rank = 100.0 * _rolling_percentile_expr(
-        "_rel_volume", _WINDOW, n_rows
-    )
+    rel_volume_rank = 100.0 * _rolling_percentile_expr("_rel_volume", _WINDOW, n_rows)
     volume_proxy = 0.3 * rel_volume_rank + 0.7 * pl.lit(agreement_proxy)
 
     structure = detect_structure(grp)
@@ -147,15 +145,11 @@ def _proxies_for_ticker(grp: pl.DataFrame) -> pl.DataFrame:
     rs_ratio = close / close.rolling_mean(_RS_LOOKBACK, min_samples=_RS_LOOKBACK)
     rs_proxy = 50.0 * ((rs_ratio - _RS_NEUTRAL) / _RS_SPREAD).clip(0.0, 2.0)
 
-    liquidity_proxy = 100.0 * _rolling_percentile_expr(
-        "_turnover", _WINDOW, n_rows
-    )
+    liquidity_proxy = 100.0 * _rolling_percentile_expr("_turnover", _WINDOW, n_rows)
 
     vol = historical_volatility(close, _WINDOW)
     vol_component = 100.0 * ((_VOL_ANCHOR - vol) / _VOL_ANCHOR).clip(0.0, 1.0)
-    ret_rank = 100.0 * _rolling_percentile_expr(
-        "_ret_20", _WINDOW, n_rows
-    )
+    ret_rank = 100.0 * _rolling_percentile_expr("_ret_20", _WINDOW, n_rows)
     vol_behavior_proxy = 0.5 * vol_component + 0.5 * ret_rank
 
     proxies = [
@@ -188,9 +182,13 @@ def _finalize(df: pl.DataFrame, config: SmartMoneyConfig) -> pl.DataFrame:
         + config.volatility_behavior * pl.col("vol_behavior_proxy")
     ).clip(0.0, 100.0)
 
-    label = pl.when(acc >= _ACCUMULATE_MIN).then(pl.lit("proxy:accumulation")).when(
-        vol >= _DISTRIBUTE_MIN
-    ).then(pl.lit("proxy:distribution")).otherwise(pl.lit("proxy:neutral"))
+    label = (
+        pl.when(acc >= _ACCUMULATE_MIN)
+        .then(pl.lit("proxy:accumulation"))
+        .when(vol >= _DISTRIBUTE_MIN)
+        .then(pl.lit("proxy:distribution"))
+        .otherwise(pl.lit("proxy:neutral"))
+    )
 
     return df.with_columns(
         weighted.alias("smart_money_score"),

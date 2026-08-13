@@ -96,7 +96,8 @@ def _sector_index_level(frame: pl.DataFrame) -> pl.DataFrame:
 def _member_features(frame: pl.DataFrame) -> pl.DataFrame:
     """Per-member trailing breadth feature (no look-ahead), aligned to rows."""
     return frame.sort(["ticker", "trade_date"]).with_columns(
-        pl.col("close").gt(sma(pl.col("close"), _SMA_BREADTH))
+        pl.col("close")
+        .gt(sma(pl.col("close"), _SMA_BREADTH))
         .over("ticker")
         .alias("above_sma50")
     )
@@ -117,28 +118,30 @@ def _sector_features(frame: pl.DataFrame) -> pl.DataFrame:
         .sort("trade_date")
     )
 
-    out = level.join(volume, on="trade_date", how="left").join(
-        breadth, on="trade_date", how="left"
-    ).with_columns(
-        (pl.col("sector_index") / pl.col("sector_index").shift(_WINDOW_1M) - 1.0).alias(
-            "perf_1m"
-        ),
-        (pl.col("sector_index") / pl.col("sector_index").shift(_WINDOW_3M) - 1.0).alias(
-            "perf_3m"
-        ),
-        (
-            pl.col("sector_volume")
-            / sma(pl.col("sector_volume"), _VOL_WINDOW)
-        ).alias("vol_trend"),
-    ).with_columns(
-        (
-            pl.when(pl.col("perf_3m").is_null())
-            .then(pl.col("perf_1m"))
-            .otherwise(
-                _MOM_1M_WEIGHT * pl.col("perf_1m")
-                + _MOM_3M_WEIGHT * pl.col("perf_3m")
-            )
-        ).alias("momentum")
+    out = (
+        level.join(volume, on="trade_date", how="left")
+        .join(breadth, on="trade_date", how="left")
+        .with_columns(
+            (
+                pl.col("sector_index") / pl.col("sector_index").shift(_WINDOW_1M) - 1.0
+            ).alias("perf_1m"),
+            (
+                pl.col("sector_index") / pl.col("sector_index").shift(_WINDOW_3M) - 1.0
+            ).alias("perf_3m"),
+            (pl.col("sector_volume") / sma(pl.col("sector_volume"), _VOL_WINDOW)).alias(
+                "vol_trend"
+            ),
+        )
+        .with_columns(
+            (
+                pl.when(pl.col("perf_3m").is_null())
+                .then(pl.col("perf_1m"))
+                .otherwise(
+                    _MOM_1M_WEIGHT * pl.col("perf_1m")
+                    + _MOM_3M_WEIGHT * pl.col("perf_3m")
+                )
+            ).alias("momentum")
+        )
     )
     return out.select(
         "trade_date", "perf_1m", "perf_3m", "momentum", "vol_trend", "breadth"
@@ -153,9 +156,7 @@ def _pctile_expr(col: str) -> pl.Expr:
     """
     rank = pl.col(col).rank().over("trade_date")
     count = pl.col(col).count().over("trade_date")
-    return pl.when(count > 1).then(100.0 * (rank - 1.0) / (count - 1.0)).otherwise(
-        50.0
-    )
+    return pl.when(count > 1).then(100.0 * (rank - 1.0) / (count - 1.0)).otherwise(50.0)
 
 
 def _score_and_class(f: pl.DataFrame, weights: SectorWeights) -> pl.DataFrame:
@@ -178,21 +179,16 @@ def _score_and_class(f: pl.DataFrame, weights: SectorWeights) -> pl.DataFrame:
     score = pl.when(den > 0).then(num / den).otherwise(None)
 
     rotation = (
-        pl.when(pl.col("momentum").is_null() | pl.col("rel_strength").is_null()).then(
-            None
-        )
-        .when((pl.col("momentum") > 0.0) & (pl.col("rel_strength") > 0.0)).then(
-            pl.lit("leading")
-        )
-        .when((pl.col("momentum") > 0.0) & (pl.col("rel_strength") < 0.0)).then(
-            pl.lit("improving")
-        )
-        .when((pl.col("momentum") < 0.0) & (pl.col("rel_strength") > 0.0)).then(
-            pl.lit("weakening")
-        )
-        .when((pl.col("momentum") < 0.0) & (pl.col("rel_strength") < 0.0)).then(
-            pl.lit("lagging")
-        )
+        pl.when(pl.col("momentum").is_null() | pl.col("rel_strength").is_null())
+        .then(None)
+        .when((pl.col("momentum") > 0.0) & (pl.col("rel_strength") > 0.0))
+        .then(pl.lit("leading"))
+        .when((pl.col("momentum") > 0.0) & (pl.col("rel_strength") < 0.0))
+        .then(pl.lit("improving"))
+        .when((pl.col("momentum") < 0.0) & (pl.col("rel_strength") > 0.0))
+        .then(pl.lit("weakening"))
+        .when((pl.col("momentum") < 0.0) & (pl.col("rel_strength") < 0.0))
+        .then(pl.lit("lagging"))
         .otherwise(None)
     )
     return with_rs.with_columns(

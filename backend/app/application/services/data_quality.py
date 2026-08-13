@@ -21,9 +21,7 @@ class QualityReport:
     valid_frame: pl.DataFrame = field(repr=False)
 
 
-def validate_ohlcv(
-    ticker: str, df: pl.DataFrame
-) -> tuple[QualityReport, pl.DataFrame]:
+def validate_ohlcv(ticker: str, df: pl.DataFrame) -> tuple[QualityReport, pl.DataFrame]:
     if df.is_empty():
         empty = pl.DataFrame(
             schema={

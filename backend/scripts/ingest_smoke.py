@@ -30,8 +30,10 @@ async def main() -> None:
     async with get_session() as session:
         rows, report = await ingest_ohlcv(ticker, start, today, session)
         print(f"rows_written={rows}")
-        print(f"quality_score={report.quality_score} rows_in={report.rows_in} "
-              f"rows_valid={report.rows_valid}")
+        print(
+            f"quality_score={report.quality_score} rows_in={report.rows_in} "
+            f"rows_valid={report.rows_valid}"
+        )
         if report.issues:
             print(f"issues={report.issues}")
         count = (

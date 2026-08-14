@@ -63,7 +63,7 @@ def test_parse_universe(tmp_path):
 
 async def test_seed_universe_idempotent(tmp_path):
     path = _write_fixture(tmp_path / "universe.xlsx")
-    async with get_session() as session:
+    async for session in get_session():
         try:
             assert await seed_universe(session, path=path) == 2
             first = await _counts(session)

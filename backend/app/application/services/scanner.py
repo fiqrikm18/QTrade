@@ -293,6 +293,7 @@ async def run_market_scan(
         from sqlalchemy import select
 
         from app.infrastructure.database.models import Stock
+
         universe = []
         for t in tickers:
             u = await session.scalar(select(Stock).where(Stock.ticker == t))

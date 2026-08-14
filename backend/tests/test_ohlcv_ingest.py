@@ -125,7 +125,7 @@ def test_validate_ohlcv_empty_frame() -> None:
 
 async def test_ingest_ohlcv_idempotent_and_drops_bad() -> None:
     frame = _bad_rows_frame()
-    async with get_session() as session:
+    async for session in get_session():
         try:
             # only the 1 good row should survive validation -> 1 DB row
             written, report = await ingest_ohlcv(

@@ -226,7 +226,13 @@ def _count_stock_scores(session, asof: date) -> int:
 
 
 async def test_scan_writes_ranked_idempotent_cached():
-    async with get_session() as session:
+    async for session in get_session():
+        # Clean up any existing test data
+        from sqlalchemy import delete
+
+        await session.execute(delete(StockScore))
+        await session.commit()
+
         trans = await session.begin()
         try:
             await _seed(session)
@@ -288,8 +294,6 @@ async def test_scan_writes_ranked_idempotent_cached():
                     assert key in comps
                 assert comps["ml"] is None  # ML disabled
                 assert r.feature_version == "v1"
-            score_a = next(r for r in rows if r.ticker == TICKER_A).opportunity_score
-            score_b = next(r for r in rows if r.ticker == TICKER_B).opportunity_score
             # Step 2: idempotent re-run -- no duplicate rows, same ranking.
             result2 = await run_market_scan(
                 session, BALANCED_PROFILE, tickers=[TICKER_A, TICKER_B]

@@ -17,6 +17,7 @@ BOARD_TO_SECTOR = {
     "Papan Baru": "NEW_BOARD",
 }
 
+
 async def seed_sectors() -> None:
     """Create sectors and assign sector_id to stocks based on board mapping."""
     settings = get_settings()

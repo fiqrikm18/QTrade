@@ -40,7 +40,7 @@ class StockScoreRepository:
         )
         result = await self._session.execute(upsert)
         await self._session.flush()
-        return int(result.rowcount)
+        return int(result.rowcount or 0)
 
     async def count_scores(self, asof: date, profile: str) -> int:
         return int(

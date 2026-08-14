@@ -33,7 +33,7 @@ async def _ingest_all() -> int:
     total = 0
     today = date.today()
     start = today - timedelta(days=5)
-    async with get_session() as session:
+    async for session in get_session():
         tickers: list[str] = list(
             (await session.execute(select(Stock.ticker))).scalars().all()
         )

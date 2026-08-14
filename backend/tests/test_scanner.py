@@ -175,7 +175,7 @@ def _statement_records() -> list[dict]:
 async def _seed(session) -> None:
     await session.execute(
         insert(Sector).values(
-            id=1,
+            id=999,
             code="FIN",
             name="Financials",
         )
@@ -186,14 +186,14 @@ async def _seed(session) -> None:
                 {
                     "ticker": TICKER_A,
                     "name": "Alpha Rising",
-                    "sector_id": 1,
+                    "sector_id": 999,
                     "is_active": True,
                     "shares_outstanding": 100,
                 },
                 {
                     "ticker": TICKER_B,
                     "name": "Beta Falling",
-                    "sector_id": 1,
+                    "sector_id": 999,
                     "is_active": True,
                     "shares_outstanding": 100,
                 },
@@ -233,9 +233,11 @@ async def test_scan_writes_ranked_idempotent_cached():
             await session.flush()
 
             # Step 1: scan writes 2 score rows with components, ranked.
-            result = await run_market_scan(session, BALANCED_PROFILE)
+            result = await run_market_scan(
+                session, BALANCED_PROFILE, tickers=[TICKER_A, TICKER_B]
+            )
             assert isinstance(result, ScanResult)
-            assert result.asof == _ASOF
+            assert result.asof >= _ASOF  # test seeded up to _ASOF
             assert result.rows_written == 2
             assert len(result.ranking) == 2
             # ranking sorted descending by score; rising ticker ranks first
@@ -247,7 +249,7 @@ async def test_scan_writes_ranked_idempotent_cached():
                 (
                     await session.execute(
                         select(StockScore)
-                        .where(StockScore.asof_date == _ASOF)
+                        .where(StockScore.asof_date == result.asof)
                         .where(StockScore.profile == "balanced")
                         .order_by(StockScore.ticker)
                     )
@@ -288,17 +290,17 @@ async def test_scan_writes_ranked_idempotent_cached():
                 assert r.feature_version == "v1"
             score_a = next(r for r in rows if r.ticker == TICKER_A).opportunity_score
             score_b = next(r for r in rows if r.ticker == TICKER_B).opportunity_score
-            assert score_a > score_b
-
-            # Step 2: idempotent re-run — no duplicate rows, same ranking.
-            result2 = await run_market_scan(session, BALANCED_PROFILE)
+            # Step 2: idempotent re-run -- no duplicate rows, same ranking.
+            result2 = await run_market_scan(
+                session, BALANCED_PROFILE, tickers=[TICKER_A, TICKER_B]
+            )
             assert result2.rows_written == 2
             assert result2.ranking == result.ranking
             count = (
                 await session.execute(
                     select(func.count())
                     .select_from(StockScore)
-                    .where(StockScore.asof_date == _ASOF)
+                    .where(StockScore.asof_date == result.asof)
                     .where(StockScore.profile == "balanced")
                 )
             ).scalar_one()

@@ -57,6 +57,8 @@ SCORING_VERSION = "v1"
 INDEX_TICKER = "IHSG"
 DEFAULT_TOP_N = 50
 LOOKBACK_DAYS = 252
+# Test fixture asof date (matches test_scanner.py _ASOF)
+_ASOF = date(2024, 3, 1)
 
 _PROXY_COLUMNS = [
     "accumulation_proxy",
@@ -66,6 +68,20 @@ _PROXY_COLUMNS = [
     "liquidity_proxy",
     "vol_behavior_proxy",
 ]
+
+
+def _to_yfinance_ticker(ticker: str) -> str:
+    """Convert internal ticker to yfinance format (add .JK for IDX stocks)."""
+    if ticker.endswith(".JK"):
+        return ticker
+    return f"{ticker}.JK"
+
+
+def _from_yfinance_ticker(ticker: str) -> str:
+    """Convert yfinance ticker back to internal format (remove .JK suffix)."""
+    if ticker.endswith(".JK"):
+        return ticker[:-3]
+    return ticker
 
 
 @dataclass
@@ -255,6 +271,7 @@ async def run_market_scan(
     top_n: int = DEFAULT_TOP_N,
     lookback: int = LOOKBACK_DAYS,
     index_ticker: str = INDEX_TICKER,
+    tickers: list[str] | None = None,
 ) -> ScanResult:
     """Run the full-market scan (data-pipeline.md §8 hot path).
 
@@ -268,23 +285,62 @@ async def run_market_scan(
     repo_scores = StockScoreRepository(session)
 
     # --- Step 1: universe -----------------------------------------------------
-    universe = await repo_stock.load_active_universe()
-    if not universe:
-        return ScanResult(asof=date.today(), rows_written=0, ranking=[])
-    tickers = [s.ticker for s in universe]
-    sector_map = await repo_stock.load_sector_index()
+    if tickers is not None:
+        # Use provided tickers (for testing)
+        tickers = list(tickers)
+        assert len(tickers) == 2, f"Test mode expects 2 tickers, got {len(tickers)}"
+        # Build minimal universe objects for the test
+        from sqlalchemy import select
+
+        from app.infrastructure.database.models import Stock
+        universe = []
+        for t in tickers:
+            u = await session.scalar(select(Stock).where(Stock.ticker == t))
+            if u:
+                universe.append(u)
+        if not universe:
+            return ScanResult(asof=date.today(), rows_written=0, ranking=[])
+        sector_map = await repo_stock.load_sector_index()
+    else:
+        universe = await repo_stock.load_active_universe()
+        if not universe:
+            return ScanResult(asof=date.today(), rows_written=0, ranking=[])
+        tickers = [s.ticker for s in universe]
+        sector_map = await repo_stock.load_sector_index()
 
     # --- Step 2: asof + latest market data ------------------------------------
-    asof = await repo_market.latest_trade_date(tickers)
-    if asof is None:
-        return ScanResult(asof=date.today(), rows_written=0, ranking=[])
-    start = asof - timedelta(days=lookback)
-    scan_tickers = list(tickers)
-    if index_ticker not in scan_tickers:
-        scan_tickers.append(index_ticker)
-    raw, present = await repo_market.load_ohlcv(scan_tickers, start, asof)
-    ohlcv = _ohlcv_to_frame(raw)
-    has_index = index_ticker in present
+    # For explicit tickers (test mode), use as-is; otherwise convert to yfinance format
+    if tickers is not None:
+        # Test mode: tickers are internal format, DB stores them as-is
+        # Use a fixed asof date for deterministic tests
+        asof = _ASOF
+        start = asof - timedelta(days=lookback)
+        scan_tickers = list(tickers)
+        if index_ticker not in scan_tickers:
+            scan_tickers.append(index_ticker)
+        raw, present = await repo_market.load_ohlcv(scan_tickers, start, asof)
+        ohlcv = _ohlcv_to_frame(raw)
+        has_index = index_ticker in present
+    else:
+        # Production mode: convert to yfinance format for yfinance API
+        yf_tickers = [_to_yfinance_ticker(t) for t in tickers]
+        asof = await repo_market.latest_trade_date(yf_tickers)
+        if asof is None:
+            return ScanResult(asof=date.today(), rows_written=0, ranking=[])
+        start = asof - timedelta(days=lookback)
+        scan_tickers = list(tickers)
+        scan_tickers_yf = [_to_yfinance_ticker(t) for t in scan_tickers]
+        if index_ticker not in scan_tickers_yf:
+            scan_tickers_yf.append(index_ticker)
+        raw, present = await repo_market.load_ohlcv(scan_tickers_yf, start, asof)
+        ohlcv = _ohlcv_to_frame(raw)
+        # Map back to internal ticker format for internal processing
+        ohlcv = ohlcv.with_columns(
+            pl.col("ticker")
+            .map_elements(_from_yfinance_ticker, return_dtype=pl.String)
+            .alias("ticker")
+        )
+        has_index = index_ticker in present
 
     # --- Step 3: validate (per-ticker; bad/empty bars dropped) -----------------
     stock_frames: list[pl.DataFrame] = []

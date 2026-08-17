@@ -1,8 +1,28 @@
 from datetime import date
 from decimal import Decimal
 
+import pytest_asyncio
+from sqlalchemy import delete
+
 from app.infrastructure.database.base import AuditMixin  # noqa: F401
-from app.infrastructure.database.models import OhlcvDaily, Stock
+from app.infrastructure.database.models import (
+    Backtest,
+    BacktestTrade,
+    MLModel,
+    MLPrediction,
+    OhlcvDaily,
+    Stock,
+)
+
+
+@pytest_asyncio.fixture(loop_scope="session", autouse=True)
+async def _clean(session):
+    await session.execute(delete(BacktestTrade))
+    await session.execute(delete(Backtest))
+    await session.execute(delete(MLPrediction))
+    await session.execute(delete(MLModel))
+    await session.commit()
+    yield
 
 
 def test_audit_mixin_present():

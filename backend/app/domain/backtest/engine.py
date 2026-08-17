@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import cast
 
 import polars as pl
 
@@ -64,9 +63,9 @@ def _fill_price(
     bar: dict[str, object], direction: str, costs: CostParams
 ) -> tuple[float, float]:
     """Fill at bar open + slippage. Returns (fill_price, slippage_cost)."""
-    open_p = cast(float, bar["open"])
-    high = cast(float, bar["high"])
-    low = cast(float, bar["low"])
+    open_p = float(bar["open"])  # pyright: ignore[reportArgumentType]
+    high = float(bar["high"])  # pyright: ignore[reportArgumentType]
+    low = float(bar["low"])  # pyright: ignore[reportArgumentType]
     slip = costs.slippage_frac * (high - low)
     if direction == "buy":
         return open_p + slip, slip
@@ -85,8 +84,8 @@ def _stop_exit(
     tp_pct: float | None,
 ) -> tuple[str, float] | None:
     """Evaluate worst-case exits on a single bar. Returns (reason, exit_price)."""
-    high = cast(float, bar["high"])
-    low = cast(float, bar["low"])
+    high = float(bar["high"])  # pyright: ignore[reportArgumentType]
+    low = float(bar["low"])  # pyright: ignore[reportArgumentType]
     if stop_pct is not None and low <= pos.entry_price * (1 - stop_pct):
         return "stop", pos.entry_price * (1 - stop_pct)
     if tp_pct is not None and high >= pos.entry_price * (1 + tp_pct):
@@ -153,11 +152,11 @@ def run_backtest(
                     and ticker in today_sig["ticker"].to_list()
                     and today_sig.filter(pl.col("ticker") == ticker)["score"][0] < 50.0
                 ):
-                    reason, exit_price = "signal", float(bar["close"])
+                    reason, exit_price = "signal", float(bar["close"])  # pyright: ignore[reportArgumentType]
                 else:
                     continue
-            high = cast(float, bar["high"])
-            low = cast(float, bar["low"])
+            high = float(bar["high"])  # pyright: ignore[reportArgumentType]
+            low = float(bar["low"])  # pyright: ignore[reportArgumentType]
             sell_price = exit_price - costs.slippage_frac * (high - low)
             proceeds = pos.shares * sell_price
             sell_fee = _fee(proceeds, False, costs)
@@ -194,7 +193,7 @@ def run_backtest(
                     continue
                 bar = bars[tk]
                 fill, slip = _fill_price(bar, "buy", costs)
-                volume_cap = cast(float, bar["volume"]) * costs.max_volume_pct
+                volume_cap = float(bar["volume"]) * costs.max_volume_pct  # pyright: ignore[reportArgumentType]
                 notional = min(cash * sizing.max_weight, volume_cap * fill)
                 shares = int(notional / fill // costs.min_lot * costs.min_lot)
                 if shares <= 0:
@@ -212,7 +211,7 @@ def run_backtest(
 
         # 3) Mark to market + record equity
         mkt = sum(
-            p.shares * cast(float, bars[p.ticker]["close"])
+            p.shares * float(bars[p.ticker]["close"])
             for p in positions.values()
             if p.ticker in bars
         )
@@ -226,9 +225,9 @@ def run_backtest(
         if bar.is_empty():
             continue
         b = bar.to_dicts()[0]
-        close_p = cast(float, b["close"])
-        high_p = cast(float, b["high"])
-        low_p = cast(float, b["low"])
+        close_p = float(b["close"])
+        high_p = float(b["high"])
+        low_p = float(b["low"])
         sell_price = close_p - costs.slippage_frac * (high_p - low_p)
         proceeds = pos.shares * sell_price
         sell_fee = _fee(proceeds, False, costs)

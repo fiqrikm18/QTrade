@@ -49,8 +49,9 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
 "tests/*.py" = ["E402", "F811"]
 # sklearn ships no type stubs (no py.typed, no .pyi); getattr()-based cast to
 # a Protocol is the pyright-clean workaround (plain attribute access leaves the
-# callable partially-unknown). Silence B009 for that file only.
+# callable partially-unknown). Silence B009 for those files only.
 "app/domain/ml/metrics.py" = ["B009"]
+"app/application/services/ml_trainer.py" = ["B009"]
 
 [tool.pyright]
 typeCheckingMode = "strict"

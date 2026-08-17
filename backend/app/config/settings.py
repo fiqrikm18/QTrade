@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     ml_enabled: bool = False
     llm_enabled: bool = False
 
+    # LLM provider config (PRD §32, docs/llm.md §2-§3)
+    llm_provider: str = "openai"
+    llm_model: str = "gpt-4o-mini"
+    llm_temperature: float = 0.1
+    llm_api_key: str | None = None
+    llm_base_url: str | None = None
+    llm_request_timeout: float = 30.0
+
 
 @lru_cache
 def get_settings() -> Settings:

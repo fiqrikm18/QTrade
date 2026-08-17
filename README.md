@@ -113,7 +113,9 @@ See `docs/deployment.md` for full details.
   alerts, compare.
 - **Phase 3** — ML, walk-forward validation, backtesting, model/feature
   versioning, feature importance; UI: ML, backtest, risk, portfolio, model
-  transparency.
+  transparency. *Status: implemented — ML engine (dataset, walk-forward,
+  calibration, registry, ml_score) + backtest engine (costs, sizing, stops,
+  metrics, bias audit) with tests.*
 - **Phase 4** — LLM, natural-language screener, research assistant, reports;
   UI: AI research assistant, AI explanations.
 

@@ -373,6 +373,11 @@ Registry: `model_name`, `model_version`, `target`, `horizon`, `features_hash`,
 
 Index `(ticker, asof_date)`, `(model_name, model_version)`.
 
+*Implementation status (CP3):* append-only via Postgres `ON CONFLICT DO NOTHING`
+on `(ticker, asof_date, model_name, model_version)`. Written by scanner when
+`ML_ENABLED=True` (off by default). `prediction_timestamp` records when the
+deployed model produced the prediction.
+
 ## 11. Portfolio, risk, backtest, alerts
 
 ### `portfolios`, `portfolio_positions`
@@ -386,9 +391,19 @@ Index `(ticker, asof_date)`, `(model_name, model_version)`.
 MaxDD, Calmar, win rate, profit factor, expectancy, holding period, turnover),
 `model_version` nullable, `created_at`. Unique-ish per identical config.
 
+*Implementation status (CP3):* persisted by `run_and_persist` service; metrics
+include CAGR/Sharpe/Sortino/MaxDD/Calmar/win rate/profit factor/expectancy/
+avg_holding/turnover; `bias_audit` jsonb records anti-look-ahead guarantees
+(fills ≥ signal, fundamentals available at LE d, universe resolved per date,
+no post-d score revisions).
+
 ### `backtest_trades`
 `backtest_id`, `ticker`, `entry_date`, `exit_date`, `entry_price`, `exit_price`,
 `shares`, `pnl`, `fees`, `slippage`, `exit_reason` (stop/tp/trailing/signal/end).
+
+*Implementation status (CP3):* per-trade output of event-driven engine with
+costs (buy 0.15%, sell 0.25%, slippage 0.1×range, 10% volume cap, 100-share
+lot), stops (10%/20%), signal exits, and end-of-window liquidation.
 
 ### `alerts`
 `ticker` nullable, `rule_type`, `params` jsonb, `enabled`, `user_id`,

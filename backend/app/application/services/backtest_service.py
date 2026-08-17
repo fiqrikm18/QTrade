@@ -77,6 +77,11 @@ async def _price_frame(
     rows, _ = await MarketDataRepository(session).load_ohlcv(
         [f"{t}.JK" for t in tickers], start, end
     )
+    # Convert Decimal to float for Polars compatibility
+    for r in rows:
+        for k in ("open", "high", "low", "close", "volume", "turnover"):
+            if r.get(k) is not None:
+                r[k] = float(r[k])  # pyright: ignore[reportArgumentType]
     frame = pl.DataFrame(rows)
     if "ticker" in frame.columns:
         frame = frame.with_columns(pl.col("ticker").str.replace(r"\.JK$", ""))

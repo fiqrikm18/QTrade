@@ -28,6 +28,7 @@ from decimal import Decimal
 from typing import Any
 
 import polars as pl
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.data_quality import validate_ohlcv
 from app.application.services.features import FEATURE_VERSION, build_technical_features
@@ -50,6 +51,7 @@ from app.domain.scoring.opportunity import (
 from app.domain.sector.rotation import sector_score
 from app.domain.technical.regime import detect_regime, regime_components
 from app.domain.technical.smart_money import smart_money_score
+from app.infrastructure.database.models import Stock
 from app.infrastructure.repositories.market_data_repo import MarketDataRepository
 from app.infrastructure.repositories.stock_repo import StockRepository
 from app.infrastructure.repositories.stock_score_repo import (
@@ -94,7 +96,7 @@ def _from_yfinance_ticker(ticker: str) -> str:
 class ScanResult:
     asof: date
     rows_written: int
-    ranking: list[tuple[str, float]] = field(default_factory=list)
+    ranking: list[tuple[str, float]] = field(default_factory=list[tuple[str, float]])
 
 
 def _to_float(v: object) -> float | None:
@@ -128,7 +130,7 @@ def _ohlcv_to_frame(rows: list[dict[str, object]]) -> pl.DataFrame:
                 "turnover": pl.Float64,
             }
         )
-    out: dict[str, list] = {
+    out: dict[str, list[object]] = {
         "ticker": [],
         "trade_date": [],
         "open": [],
@@ -263,7 +265,7 @@ def _sector_of(ticker: str, sector_map: dict[str, list[str]]) -> str | None:
     return None
 
 
-def _shares_for(ticker: str, universe) -> float | None:
+def _shares_for(ticker: str, universe: list[Stock]) -> float | None:
     for s in universe:
         if s.ticker == ticker and s.shares_outstanding is not None:
             return float(s.shares_outstanding)
@@ -271,7 +273,7 @@ def _shares_for(ticker: str, universe) -> float | None:
 
 
 async def run_market_scan(
-    session,
+    session: AsyncSession,
     profile: ScoringProfile = BALANCED_PROFILE,
     *,
     top_n: int = DEFAULT_TOP_N,
@@ -303,9 +305,7 @@ async def run_market_scan(
         # Build minimal universe objects for the test
         from sqlalchemy import select
 
-        from app.infrastructure.database.models import Stock
-
-        universe = []
+        universe: list[Stock] = []
         for t in tickers:
             u = await session.scalar(select(Stock).where(Stock.ticker == t))
             if u:
@@ -431,14 +431,15 @@ async def run_market_scan(
 
     # --- Step 7: fundamentals (point-in-time) ----------------------------------
     stmt_buckets = await repo_stock.load_statements(tickers, asof)
-    price_map = {
-        t: _to_float(r.get("close"))
-        for t, r in feat_by_ticker.items()
-        if t in tickers and _to_float(r.get("close")) is not None
-    }
+    price_map: dict[str, float] = {}
+    for t, r in feat_by_ticker.items():
+        if t in tickers:
+            close = _to_float(r.get("close"))
+            if close is not None:
+                price_map[t] = close
 
     returns = _total_returns_map(stock_df, index_df, tickers)
-    ratio_cache: dict[str, object] = {}
+    ratio_cache: dict[str, RatioSet | None] = {}
     for tk in tickers:
         snaps = stmt_buckets.get(tk, [])
         snap = latest_snapshot(snaps, asof)
@@ -456,13 +457,11 @@ async def run_market_scan(
     for tk in tickers:
         feat = feat_by_ticker.get(tk, {})
         sm_row = sm_by_ticker.get(tk, {})
-        rs_ret, st_ret, idx_ret = returns.get(tk, (None, None, None))
+        _, st_ret, idx_ret = returns.get(tk, (None, None, None))
 
         fund_ratios = ratio_cache.get(tk)
-        sector_peer_ratios = [
-            ratio_cache[t]
-            for t in tickers
-            if t != tk and ratio_cache.get(t) is not None
+        sector_peer_ratios: list[RatioSet] = [
+            r for t in tickers if t != tk and (r := ratio_cache.get(t)) is not None
         ]
         history_ratios = _history_ratios(
             tk, stmt_buckets, asof, price_map, lambda t: _shares_for(t, universe)
@@ -473,8 +472,10 @@ async def run_market_scan(
             else None
         )
         fundamental_val = (
-            float(fund_result["fundamental_score"]) if fund_result is not None else None
-        )  # type: ignore[arg-type]
+            _to_float(fund_result.get("fundamental_score"))
+            if fund_result is not None
+            else None
+        )
 
         vol = _to_float(feat.get("hist_vol_20"))
         risk_val = _risk_score(vol)
@@ -483,7 +484,8 @@ async def run_market_scan(
         rs_val = _relative_strength_score(st_ret, idx_ret)
         sm_val = _to_float(sm_row.get("smart_money_score")) if sm_row else None
         factor_val = _factor_score(fund_result)
-        sector_val = sector_scores.get(_sector_of(tk, sector_map))
+        sector_key = _sector_of(tk, sector_map)
+        sector_val = sector_scores.get(sector_key) if sector_key is not None else None
         macro_val = (
             reg_comps.get("breadth") if reg_comps and "breadth" in reg_comps else 50.0
         )
@@ -536,9 +538,7 @@ async def run_market_scan(
                     "risk": risk_val,
                     "ml": None,
                     "regime": regime,
-                    "regime_components": reg_comps
-                    if isinstance(reg_comps, dict)
-                    else {},
+                    "regime_components": reg_comps,
                     "breadth_score": breadth_latest,
                 },
                 "classification": cls,

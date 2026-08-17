@@ -302,6 +302,11 @@ One row per ticker per trade date (or per scan date for latest-only):
 `obv`, `mfi`, `cmf`, price-structure flags, `feature_version`. Key
 `(ticker, asof_date, feature_version)`.
 
+*Implementation status (CP2):* the table stores computed indicators in an
+`indicators` jsonb column (incl. `asof_date`), unique
+`(ticker, asof_date, feature_version)`. The scanner writes one row per scan
+(Step 11); served via `GET /api/v1/stocks/{ticker}/technical`.
+
 ### `fundamental_features`, `factor_features`, `macro_features`
 Same pattern: computed values + `asof_date` + `feature_version`. Macro
 features are per-date (shared across stocks).

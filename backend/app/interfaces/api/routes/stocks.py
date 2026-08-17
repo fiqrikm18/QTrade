@@ -2,11 +2,11 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.models import Stock, StockScore
+from app.infrastructure.database.models import OhlcvDaily, Stock, StockScore
 from app.infrastructure.database.session import get_session
 
 router = APIRouter()
@@ -77,8 +77,6 @@ async def stock_analysis(
     """Get full stock analysis with opportunity score and components."""
     score = await get_latest_score(session, ticker, profile)
     if not score:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail=f"Score not found for {ticker}")
 
     # Get stock info
@@ -87,20 +85,49 @@ async def stock_analysis(
     result = await session.execute(select(Stock).where(Stock.ticker == ticker))
     stock = result.scalars().first()
     if not stock:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail=f"Stock {ticker} not found")
+
+    # Latest price + change from OHLCV (indexed read, no request-path compute)
+    price_row = (
+        await session.execute(
+            select(
+                OhlcvDaily.close,
+                OhlcvDaily.trade_date,
+                OhlcvDaily.volume,
+                OhlcvDaily.turnover,
+            )
+            .where(OhlcvDaily.ticker == f"{ticker}.JK")
+            .order_by(OhlcvDaily.trade_date.desc())
+            .limit(1)
+        )
+    ).first()
+    prev_row = (
+        await session.execute(
+            select(OhlcvDaily.close)
+            .where(OhlcvDaily.ticker == f"{ticker}.JK")
+            .order_by(OhlcvDaily.trade_date.desc())
+            .offset(1)
+            .limit(1)
+        )
+    ).first()
+    price = float(price_row[0]) if price_row and price_row[0] is not None else 0.0
+    prev = float(prev_row[0]) if prev_row and prev_row[0] is not None else price
+    change = price - prev
+    change_pct = change / prev * 100.0 if prev else 0.0
+    shares = float(stock.shares_outstanding) if stock.shares_outstanding else 0.0
 
     return {
         "ticker": score.ticker,
         "name": stock.name,
         "sector": str(stock.sector_id),
-        "price": 0,
-        "change": 0,
-        "change_pct": 0,
-        "volume": 0,
-        "turnover": 0,
-        "market_cap": 0,
+        "price": price,
+        "change": change,
+        "change_pct": change_pct,
+        "volume": int(price_row[2]) if price_row and price_row[2] is not None else 0,
+        "turnover": (
+            float(price_row[3]) if price_row and price_row[3] is not None else 0.0
+        ),
+        "market_cap": price * shares,
         "opportunity_score": float(score.opportunity_score)
         if score.opportunity_score is not None
         else 0.0,
@@ -123,26 +150,35 @@ async def stock_technical(
     ticker: str = Path(..., description="Stock ticker"),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
-    """Get latest technical indicators for a stock."""
-    # Return mock data for now
+    """Get latest technical indicators for a stock (from the newest scan)."""
+    from app.infrastructure.repositories.stock_score_repo import StockScoreRepository
+
+    repo = StockScoreRepository(session)
+    indicators = await repo.latest_technical_features(ticker)
+    if indicators is None:
+        raise HTTPException(status_code=404, detail=f"No features for {ticker}")
+    keys = (
+        "rsi_14",
+        "macd",
+        "macd_signal",
+        "macd_hist",
+        "sma_20",
+        "sma_50",
+        "sma_200",
+        "ema_20",
+        "atr_14",
+        "adx_14",
+        "boll_upper",
+        "boll_mid",
+        "boll_lower",
+        "roc_20",
+        "rel_volume",
+        "hist_vol_20",
+        "stoch_k",
+        "stoch_d",
+    )
     return {
         "ticker": ticker,
-        "rsi_14": None,
-        "macd": None,
-        "macd_signal": None,
-        "macd_hist": None,
-        "sma_20": None,
-        "sma_50": None,
-        "sma_200": None,
-        "ema_20": None,
-        "atr_14": None,
-        "adx_14": None,
-        "bollinger_upper": None,
-        "bollinger_mid": None,
-        "bollinger_lower": None,
-        "roc_20": None,
-        "hist_vol_20": None,
-        "stoch_k": None,
-        "stoch_d": None,
-        "asof": None,
+        **{key: indicators.get(key) for key in keys},
+        "asof": indicators.get("asof_date"),
     }

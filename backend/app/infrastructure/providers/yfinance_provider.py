@@ -20,7 +20,10 @@ _OHLCV_RENAME: dict[str, str] = {
 
 def _idx_symbol(ticker: str) -> str:
     """yfinance uses the ``ticker.JK`` form for IDX equities."""
-    return ticker if "." in ticker else f"{ticker}.JK"
+    return ticker if "." in ticker or ticker.startswith("^") else f"{ticker}.JK"
+
+
+_INDEX_SYMBOLS: dict[str, str] = {"IHSG": "^JKSE"}
 
 
 def normalize_to_polars(frame: Any) -> pl.DataFrame:
@@ -88,6 +91,17 @@ class YFinanceProvider(MarketDataProvider):
 
     def get_ohlcv(self, ticker: str, start: date, end: date) -> pl.DataFrame:
         symbol = _idx_symbol(ticker)
+        tk: Any = yf.Ticker(symbol)
+        hist: Any = tk.history(
+            start=start.isoformat(),
+            end=end.isoformat(),
+            interval="1d",
+            auto_adjust=False,
+        )
+        return normalize_to_polars(hist)
+
+    def get_index_ohlcv(self, index: str, start: date, end: date) -> pl.DataFrame:
+        symbol = _INDEX_SYMBOLS.get(index, index)
         tk: Any = yf.Ticker(symbol)
         hist: Any = tk.history(
             start=start.isoformat(),

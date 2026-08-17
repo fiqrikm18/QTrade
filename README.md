@@ -104,7 +104,10 @@ See `docs/deployment.md` for full details.
 - **Phase 1** — universe, OHLCV, DB, technical engine, fundamentals, breadth,
   sector, scoring, full-market scanner, API; UI: terminal shell, dashboard,
   market overview, screener, stock analysis, chart system, watchlist
-  (DESIGN §69-P1).
+  (DESIGN §69-P1). *Status: implemented — scanner runs on real data, API
+  routes serve scan artifacts (market overview, screener, stock analysis,
+  technical indicators), frontend renders real API data with typed contracts
+  (vitest green).*
 - **Phase 2** — smart money, factor model, macro engine, economic calendar,
   news ingestion, alerts; UI: smart money, factors, macro, calendar, news,
   alerts, compare.

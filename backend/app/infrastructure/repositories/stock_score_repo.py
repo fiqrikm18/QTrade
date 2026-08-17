@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.models import StockScore
+from app.infrastructure.database.models import StockScore, TechnicalFeature
 
 _SCAN_CACHE_TTL = 86400  # 24h, docs/data-pipeline.md §10
 
@@ -43,6 +43,46 @@ class StockScoreRepository:
         await self._session.flush()
         rc = cast("int | None", getattr(result, "rowcount", None))
         return rc or 0
+
+    async def upsert_technical_features(
+        self, rows: list[dict[str, object]], asof: date
+    ) -> int:
+        """Idempotent latest-only upsert keyed on (ticker, asof_date, feature_version).
+
+        Older scan rows are left untouched (append-only); the newest scan date
+        wins for reads. Returns rows affected.
+        """
+        if not rows:
+            return 0
+        stmt = pg_insert(TechnicalFeature).values(rows)
+        set_: dict[str, Any] = {
+            col: stmt.excluded[col]
+            for col in rows[0]
+            if col not in {"ticker", "asof_date", "feature_version", "created_at"}
+        }
+        set_["updated_at"] = func.now()
+        upsert = stmt.on_conflict_do_update(
+            index_elements=["ticker", "asof_date", "feature_version"],
+            set_=set_,
+        )
+        result = await self._session.execute(upsert)
+        await self._session.flush()
+        rc = cast("int | None", getattr(result, "rowcount", None))
+        return rc or 0
+
+    async def latest_technical_features(self, ticker: str) -> dict[str, object] | None:
+        """Newest feature row for ``ticker`` (any version), else None."""
+        row = (
+            await self._session.execute(
+                select(TechnicalFeature.indicators)
+                .where(TechnicalFeature.ticker == ticker)
+                .order_by(TechnicalFeature.asof_date.desc())
+                .limit(1)
+            )
+        ).first()
+        if row is None or row[0] is None:
+            return None
+        return row[0]
 
     async def count_scores(self, asof: date, profile: str) -> int:
         n = await self._session.scalar(

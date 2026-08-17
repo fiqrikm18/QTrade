@@ -138,6 +138,30 @@ class FinancialStatement(AuditMixin, Base):
     items: Mapped[dict[str, float]] = mapped_column(JSONB, nullable=False)
 
 
+class TechnicalFeature(AuditMixin, Base):
+    """Latest technical indicators per ticker (docs/data-model.md §9).
+
+    Written by the scanner on each scan (latest-only row per scan date);
+    keyed on ``(ticker, asof_date, feature_version)``.
+    """
+
+    __tablename__ = "technical_features"
+    __table_args__ = (
+        UniqueConstraint(
+            "ticker",
+            "asof_date",
+            "feature_version",
+            name="uq_technical_features_ticker_asof_version",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    ticker: Mapped[str] = mapped_column(Text, nullable=False)
+    asof_date: Mapped[date] = mapped_column(Date, nullable=False)
+    feature_version: Mapped[str] = mapped_column(Text, nullable=False)
+    indicators: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+
+
 class StockScore(AuditMixin, Base):
     """Scan result per ticker per profile/version (docs/data-model.md §9).
 

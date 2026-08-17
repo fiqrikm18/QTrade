@@ -299,6 +299,16 @@ quantitative trading **terminal**, not a generic SaaS dashboard.
 - Data consumed through typed API contracts (Pydantic → OpenAPI → TS types).
   Never hardcode scores/market data in components (DESIGN §70).
 
+Implementation status (CP2):
+- Typed API client in `frontend/src/lib/api.ts` (market overview, screener
+  run, stock analysis, technical indicators); Next.js rewrites proxy
+  `/api/v1/*` to the backend.
+- Dashboard + screener pages render real scan artifacts with loading/error/
+  empty states (DESIGN §39-41); no mock data in runtime paths.
+- Design tokens for semantic colors (`--color-positive/negative/warning/info`)
+  in `globals.css`; `ScoreBar` and `PriceChange` primitives use them
+  (no hardcoded hex) and are covered by vitest + testing-library tests.
+
 Pages (PRD §42) map 1:1 to the DESIGN.md page map; frontend MVP phases per
 DESIGN §69 (see Roadmap below).
 

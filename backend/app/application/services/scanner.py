@@ -60,7 +60,9 @@ from app.infrastructure.repositories.stock_score_repo import (
 SCORING_VERSION = "v1"
 INDEX_TICKER = "IHSG"
 DEFAULT_TOP_N = 50
-LOOKBACK_DAYS = 252
+# ~250 trading sessions (calendar days * 5/7) to cover the 200-bar SMA200
+# regime check with margin; 252 calendar days would yield only ~160 bars.
+LOOKBACK_DAYS = 380
 # Test fixture asof date (matches test_scanner.py _ASOF)
 _ASOF = date(2024, 3, 1)
 
@@ -288,6 +290,11 @@ async def run_market_scan(
     repo_stock = StockRepository(session)
     repo_scores = StockScoreRepository(session)
 
+    # Capture the caller-supplied tickers before Step 1 reassigns them: the
+    # explicit-tickers path is the deterministic test mode; the universe path
+    # is the production scan.
+    explicit_tickers = tickers is not None
+
     # --- Step 1: universe -----------------------------------------------------
     if tickers is not None:
         # Use provided tickers (for testing)
@@ -315,7 +322,7 @@ async def run_market_scan(
 
     # --- Step 2: asof + latest market data ------------------------------------
     # For explicit tickers (test mode), use as-is; otherwise convert to yfinance format
-    if tickers is not None:
+    if explicit_tickers:
         # Test mode: tickers are internal format, DB stores them as-is
         # Use a fixed asof date for deterministic tests
         asof = _ASOF
@@ -544,6 +551,39 @@ async def run_market_scan(
 
     # --- Step 11: upsert stock_scores + cache ranking -------------------------
     written = await repo_scores.upsert_scores(rows)
+    feature_rows: list[dict[str, object]] = [
+        {
+            "ticker": r["ticker"],
+            "asof_date": asof,
+            "feature_version": FEATURE_VERSION,
+            "indicators": {
+                key: r[key]
+                for key in (
+                    "rsi_14",
+                    "macd",
+                    "macd_signal",
+                    "macd_hist",
+                    "sma_20",
+                    "sma_50",
+                    "sma_200",
+                    "ema_20",
+                    "atr_14",
+                    "adx_14",
+                    "boll_upper",
+                    "boll_mid",
+                    "boll_lower",
+                    "roc_20",
+                    "rel_volume",
+                    "hist_vol_20",
+                    "stoch_k",
+                    "stoch_d",
+                )
+            }
+            | {"asof_date": asof.isoformat()},
+        }
+        for r in latest_feat_df.to_dicts()
+    ]
+    await repo_scores.upsert_technical_features(feature_rows, asof)
     ranking = sorted(
         ((t, s) for t, s in score_map.items()), key=lambda x: x[1], reverse=True
     )

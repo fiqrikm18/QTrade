@@ -4,6 +4,7 @@ import json
 from datetime import date
 from typing import Any, cast
 
+import polars as pl
 import redis.asyncio as redis
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -92,6 +93,40 @@ class StockScoreRepository:
             .where(StockScore.profile == profile)
         )
         return int(n or 0)
+
+    async def latest_feature_frame(self, tickers: list[str]) -> pl.DataFrame | None:
+        """Feature rows for ``tickers`` at the latest persisted asof date."""
+        latest = (
+            await self._session.execute(
+                select(TechnicalFeature.asof_date)
+                .where(TechnicalFeature.ticker.in_(tickers))
+                .order_by(TechnicalFeature.asof_date.desc())
+                .limit(1)
+            )
+        ).scalar()
+        if latest is None:
+            return None
+        rows = (
+            (
+                await self._session.execute(
+                    select(TechnicalFeature)
+                    .where(
+                        TechnicalFeature.ticker.in_(tickers),
+                        TechnicalFeature.asof_date == latest,
+                    )
+                    .order_by(TechnicalFeature.ticker)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        records = [
+            {"ticker": r.ticker, "asof_date": r.asof_date.isoformat(), **r.indicators}
+            for r in rows
+        ]
+        if not records:
+            return None
+        return pl.DataFrame(records)
 
 
 async def cache_scan_rankings(

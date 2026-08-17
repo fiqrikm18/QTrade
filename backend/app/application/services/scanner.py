@@ -54,6 +54,7 @@ from app.domain.technical.smart_money import smart_money_score
 from app.infrastructure.database.models import Stock
 from app.infrastructure.repositories.market_data_repo import MarketDataRepository
 from app.infrastructure.repositories.stock_repo import StockRepository
+from app.application.services.ml_inference import run_ml_inference
 from app.infrastructure.repositories.stock_score_repo import (
     StockScoreRepository,
     cache_scan_rankings,
@@ -584,6 +585,8 @@ async def run_market_scan(
         for r in latest_feat_df.to_dicts()
     ]
     await repo_scores.upsert_technical_features(feature_rows, asof)
+    # ML inference (gated by ML_ENABLED; no-op when off)
+    await run_ml_inference(session, tickers, asof)
     ranking = sorted(
         ((t, s) for t, s in score_map.items()), key=lambda x: x[1], reverse=True
     )

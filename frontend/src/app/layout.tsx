@@ -15,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="h-full bg-background text-foreground">
-        <div className="h-full">{children}</div>
+        <div className="h-full">
+          <AppShell>{children}</AppShell>
+        </div>
       </body>
     </html>
   )

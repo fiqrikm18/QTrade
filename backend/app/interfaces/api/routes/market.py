@@ -1,28 +1,31 @@
 """Market API routes."""
 
+from typing import Any
+
 from fastapi import APIRouter
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
-async def get_latest_regime(session):
+async def get_latest_regime(session: AsyncSession) -> dict[str, Any] | None:
     """Get latest market regime - returns None if table doesn't exist."""
     return None
 
 
-async def get_latest_breadth(session):
+async def get_latest_breadth(session: AsyncSession) -> dict[str, Any] | None:
     """Get latest market breadth - returns None if table doesn't exist."""
     return None
 
 
-async def get_latest_sector_scores(session):
+async def get_latest_sector_scores(session: AsyncSession) -> list[dict[str, Any]]:
     """Get latest sector scores - returns empty list if table doesn't exist."""
     return []
 
 
 @router.get("/overview")
-async def market_overview():
-    """Get market overview with regime, breadth, top movers, sector rotation, and macro."""
+async def market_overview() -> dict[str, Any]:
+    """Get market overview: regime, breadth, movers, rotation, macro."""
     return {
         "regime": {
             "regime": "NEUTRAL",
@@ -56,13 +59,13 @@ async def market_overview():
 
 
 @router.get("/regime")
-async def market_regime():
+async def market_regime() -> dict[str, Any]:
     """Get current market regime."""
     return {"regime": "NEUTRAL", "confidence": 0, "components": {}, "asof": None}
 
 
 @router.get("/breadth")
-async def market_breadth():
+async def market_breadth() -> dict[str, Any]:
     """Get market breadth indicators."""
     return {
         "advance": 0,
@@ -82,6 +85,6 @@ async def market_breadth():
 
 
 @router.get("/sectors")
-async def sector_performance():
+async def sector_performance() -> list[dict[str, Any]]:
     """Get sector rotation data."""
     return []

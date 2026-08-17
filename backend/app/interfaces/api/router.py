@@ -1,11 +1,11 @@
 """API route definitions."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 
 router = APIRouter(prefix="/api/v1")
 
 
-def register_routes(app):
+def register_routes(app: FastAPI) -> None:
     from app.interfaces.api.routes import market, screener, stocks
 
     router.include_router(market.router, prefix="/market", tags=["market"])

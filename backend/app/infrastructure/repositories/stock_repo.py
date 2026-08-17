@@ -101,7 +101,7 @@ class StockRepository:
         return mapping
 
     async def load_statements(
-        self, tickers: list[str], asof
+        self, tickers: list[str], asof: date
     ) -> dict[str, list[FundamentalSnapshot]]:
         """PIT-gated candidate statements per ticker (``available_at <= asof``).
 

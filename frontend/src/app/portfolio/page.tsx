@@ -1,25 +1,81 @@
-"use client"
+"use client";
 
-import { AppShell } from "@/components/ui/appshell"
-import { Sidebar } from "@/components/ui/sidebar"
-import { Topbar } from "@/components/ui/topbar"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, ArrowUp, ArrowDown, Target, AlertTriangle, Clock, Zap, Shield, RefreshCw, Plus, Minus, Settings, Download, PieChart, Shield as ShieldIcon, RefreshCw, Plus, Minus, Settings, Download, PieChart, Shield as ShieldIcon, RefreshCw as RefreshCwIcon, Plus as PlusIcon, Minus as MinusIcon, Settings as SettingsIcon, Download as DownloadIcon, PieChart as PieChartIcon, Shield as ShieldIcon2, RefreshCw as RefreshCwIcon2, Plus as PlusIcon2, Minus as MinusIcon2, Settings as SettingsIcon2, Download as DownloadIcon2, PieChart as PieChartIcon2, Shield as ShieldIcon3, RefreshCw as RefreshCwIcon3, Plus as PlusIcon3, Minus as MinusIcon3, Settings as SettingsIcon3, Download as DownloadIcon3, PieChart as PieChartIcon3, Shield as ShieldIcon4, RefreshCw as RefreshCwIcon4, Plus as PlusIcon4, Minus as MinusIcon4, Settings as SettingsIcon4, Download as DownloadIcon4, PieChart as PieChartIcon4, Shield as ShieldIcon5 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { Plus, Minus, Trash2, Edit, PieChart, Activity, Shield, Wallet, Download, PieChart as PieChartIcon, Shield as ShieldIcon, RefreshCw, Plus as PlusIcon, Minus as MinusIcon, Settings, Download as DownloadIcon, PieChart as PieChartIcon2, Shield as ShieldIcon2, RefreshCw, Plus as PlusIcon2, Minus as MinusIcon2, Settings as SettingsIcon2, Download as DownloadIcon2, PieChart as PieChartIcon3, Shield as ShieldIcon3, RefreshCw as RefreshCwIcon3, Plus as PlusIcon3, Minus as MinusIcon3, Settings as SettingsIcon3, Download as DownloadIcon3, PieChart as PieChartIcon4, Shield as ShieldIcon4, RefreshCw as RefreshCwIcon4, Plus as PlusIcon4, Minus as MinusIcon4, Settings as SettingsIcon4, Download as DownloadIcon4, PieChart as PieChartIcon5, Shield as ShieldIcon5 } from "lucide-react"
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  ArrowUp,
+  ArrowDown,
+  Target,
+  AlertTriangle,
+  Clock,
+  Zap,
+  Shield,
+  RefreshCw,
+  Plus,
+  Minus,
+  Settings,
+  Download,
+  PieChart,
+  Trash2,
+  Edit,
+  Activity,
+  Wallet,
+  GitCompare,
+  Search,
+  List,
+  Globe,
+  Calendar,
+  Briefcase,
+  FileText,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Eye,
+  Copy,
+  Bookmark,
+  Sparkles,
+  Gauge,
+  Percent,
+  Building2,
+  Landmark,
+  Scale,
+  Layers,
+  Database,
+  Save,
+  User,
+  Mail,
+  Lock,
+  Key,
+  MoreHorizontal,
+  LineChart,
+  Coins,
+  Banknote,
+  Columns2,
+  Crosshair,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PortfolioPage() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Mock portfolio data
   const portfolio = {
@@ -36,30 +92,25 @@ export default function PortfolioPage() {
       { ticker: "TLKM", name: "Telkom Indonesia", shares: 30000, avgCost: 3200, currentPrice: 3010, marketValue: 90300000, cost: 96000000, pnl: -5700000, pnlPct: -5.94, weight: 7.2, sector: "TELCO", beta: 0.85, sharpe: 0.92, var95: 1.9 },
       { ticker: "BBRI", name: "Bank Rakyat Indonesia", shares: 60000, avgCost: 4800, currentPrice: 5180, marketValue: 310800000, cost: 288000000, pnl: 22800000, pnlPct: 7.92, weight: 24.8, sector: "BANKING", beta: 1.08, sharpe: 1.32, var95: 2.5 },
       { ticker: "ASII", name: "Astra International", shares: 20000, avgCost: 5500, currentPrice: 5200, marketValue: 104000000, cost: 110000000, pnl: -6000000, pnlPct: -5.45, weight: 8.3, sector: "AUTOMOTIVE", beta: 1.25, sharpe: 0.88, var95: 3.2 },
-    ]
-  }
-
-  const totalValue = portfolio.positions.reduce((sum, p) => sum + p.marketValue, 0) + portfolio.cash
-  const totalCost = portfolio.positions.reduce((sum, p) => sum + p.cost, 0) + portfolio.cash
-  const totalPnL = totalValue - totalCost
-  const totalPnLPct = (totalPnL / totalCost) * 100
+    ],
+  };
 
   const sectorAllocation = [
-    { sector: "BANKING", value: 1267050000, pct: 92.5 },
-    { sector: "TELCO", value: 90300000, pct: 6.6 },
-    { sector: "AUTOMOTIVE", value: 104000000, pct: 7.6 },
-    { sector: "CASH", value: 50000000, pct: 3.7 },
-  ]
+    { sector: "BANKING", value: 1267050000, pct: 92.5, color: "bg-blue-500" },
+    { sector: "TELCO", value: 90300000, pct: 6.6, color: "bg-green-500" },
+    { sector: "AUTOMOTIVE", value: 104000000, pct: 7.6, color: "bg-yellow-500" },
+    { sector: "CASH", value: 50000000, pct: 3.7, color: "bg-gray-500" },
+  ];
 
   const factorExposure = [
-    { factor: "Market", exposure: 1.05, color: "bg-blue-500" },
-    { factor: "Size", exposure: -0.15, color: "bg-red-500" },
-    { factor: "Value", exposure: 0.25, color: "bg-green-500" },
-    { factor: "Momentum", exposure: 0.35, color: "bg-blue-500" },
-    { factor: "Quality", exposure: 0.45, color: "bg-purple-500" },
-    { factor: "Volatility", exposure: -0.10, color: "bg-red-500" },
-    { factor: "Liquidity", exposure: 0.20, color: "bg-yellow-500" },
-  ]
+    { factor: "Market", exposure: 1.05, contrib: 0.85, color: "bg-blue-500" },
+    { factor: "Size", exposure: -0.15, contrib: -0.08, color: "bg-red-500" },
+    { factor: "Value", exposure: 0.25, contrib: 0.18, color: "bg-green-500" },
+    { factor: "Momentum", exposure: 0.35, contrib: 0.28, color: "bg-blue-500" },
+    { factor: "Quality", exposure: 0.45, contrib: 0.32, color: "bg-purple-500" },
+    { factor: "Volatility", exposure: -0.10, contrib: -0.05, color: "bg-red-500" },
+    { factor: "Liquidity", exposure: 0.20, contrib: 0.12, color: "bg-yellow-500" },
+  ];
 
   const riskMetrics = {
     portfolioVol: 14.2,
@@ -71,7 +122,7 @@ export default function PortfolioPage() {
     sortinoRatio: 1.68,
     trackingError: 3.2,
     infoRatio: 0.45,
-  }
+  };
 
   const correlationMatrix = [
     { asset: "BBCA", BBCA: 1.00, BMRI: 0.85, TLKM: 0.35, BBRI: 0.78, ASII: 0.42 },
@@ -79,7 +130,32 @@ export default function PortfolioPage() {
     { asset: "TLKM", BBCA: 0.35, BMRI: 0.28, TLKM: 1.00, BBRI: 0.22, ASII: 0.15 },
     { asset: "BBRI", BBCA: 0.78, BMRI: 0.82, TLKM: 0.22, BBRI: 1.00, ASII: 0.35 },
     { asset: "ASII", BBCA: 0.42, BMRI: 0.38, TLKM: 0.15, BBRI: 0.35, ASII: 1.00 },
-  ]
+  ];
+
+  const monthlyReturns = [
+    { month: "Jan 2024", port: 2.45, bench: 1.82, excess: 0.63, cum: 2.45 },
+    { month: "Feb 2024", port: 1.87, bench: 1.45, excess: 0.42, cum: 4.36 },
+    { month: "Mar 2024", port: -0.85, bench: -1.12, excess: 0.27, cum: 3.48 },
+    { month: "Apr 2024", port: 3.12, bench: 2.67, excess: 0.45, cum: 6.71 },
+    { month: "May 2024", port: 1.23, bench: 0.89, excess: 0.34, cum: 7.98 },
+    { month: "Jun 2024", port: 2.01, bench: 1.78, excess: 0.23, cum: 10.16 },
+  ];
+
+  const transactions = [
+    { date: "2024-01-15", ticker: "BBCA", type: "BUY", shares: 5000, price: 9000, value: 45000000, fees: 45000, net: 45045000 },
+    { date: "2024-01-10", ticker: "BMRI", type: "BUY", shares: 10000, price: 6100, value: 61000000, fees: 61000, net: 61061000 },
+    { date: "2024-01-08", ticker: "TLKM", type: "SELL", shares: 5000, price: 3050, value: 15250000, fees: 15250, net: 15234750 },
+    { date: "2024-01-05", ticker: "BBRI", type: "BUY", shares: 8000, price: 5050, value: 40400000, fees: 40400, net: 40440400 },
+    { date: "2024-01-03", ticker: "ASII", type: "SELL", shares: 3000, price: 5300, value: 15900000, fees: 15900, net: 15884100 },
+  ];
+
+  const topHoldings = [
+    { ticker: "BBCA", name: "Bank Central Asia", weight: 36.5, pnl: 7.35 },
+    { ticker: "BMRI", name: "Bank Mandiri", weight: 40.0, pnl: 7.76 },
+    { ticker: "TLKM", name: "Telkom Indonesia", weight: 7.2, pnl: -5.94 },
+    { ticker: "BBRI", name: "Bank Rakyat Indonesia", weight: 24.8, pnl: 7.92 },
+    { ticker: "ASII", name: "Astra International", weight: 7.6, pnl: -5.45 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -154,7 +230,7 @@ export default function PortfolioPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="overview" onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="holdings">Holdings</TabsTrigger>
@@ -165,7 +241,7 @@ export default function PortfolioPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Sector Allocation */}
+          {/* Sector Allocation & Top Holdings */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -173,18 +249,13 @@ export default function PortfolioPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {[
-                    { sector: "BANKING", value: 92.5, color: "bg-blue-500" },
-                    { sector: "TELCO", value: 6.6, color: "bg-green-500" },
-                    { sector: "AUTOMOTIVE", value: 7.6, color: "bg-yellow-500" },
-                    { sector: "CASH", value: 3.7, color: "bg-gray-500" },
-                  ].map((item) => (
+                  {sectorAllocation.map((item) => (
                     <div key={item.sector} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color.replace("bg-", "").replace("-500", "") }} />
                         <span className="text-sm font-medium">{item.sector}</span>
                       </div>
-                      <span className="font-medium">{item.value}%</span>
+                      <span className="font-medium">{item.pct}%</span>
                     </div>
                   ))}
                 </div>
@@ -197,13 +268,7 @@ export default function PortfolioPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {[
-                    { ticker: "BBCA", name: "Bank Central Asia", weight: 36.5, pnl: 7.35 },
-                    { ticker: "BMRI", name: "Bank Mandiri", weight: 40.0, pnl: 7.76 },
-                    { ticker: "TLKM", name: "Telkom Indonesia", weight: 7.2, pnl: -5.94 },
-                    { ticker: "BBRI", name: "Bank Rakyat Indonesia", weight: 24.8, pnl: 7.92 },
-                    { ticker: "ASII", name: "Astra International", weight: 7.6, pnl: -5.45 },
-                  ].map((holding) => (
+                  {topHoldings.map((holding) => (
                     <div key={holding.ticker} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                       <div className="flex items-center gap-3">
                         <span className="font-medium">{holding.ticker}</span>
@@ -244,7 +309,7 @@ export default function PortfolioPage() {
                     <p className="text-sm text-muted-foreground">{metric.label}</p>
                     <p className="text-xs text-muted-foreground">{metric.desc}</p>
                   </div>
-                )}
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -268,13 +333,7 @@ export default function PortfolioPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {[
-                      { asset: "BBCA", BBCA: 1.00, BMRI: 0.85, TLKM: 0.35, BBRI: 0.78, ASII: 0.42 },
-                      { asset: "BMRI", BBCA: 0.85, BMRI: 1.00, TLKM: 0.28, BBRI: 0.82, ASII: 0.38 },
-                      { asset: "TLKM", BBCA: 0.35, BMRI: 0.28, TLKM: 1.00, BBRI: 0.22, ASII: 0.15 },
-                      { asset: "BBRI", BBCA: 0.78, BMRI: 0.82, TLKM: 0.22, BBRI: 1.00, ASII: 0.35 },
-                      { asset: "ASII", BBCA: 0.42, BMRI: 0.38, TLKM: 0.15, BBRI: 0.35, ASII: 1.00 },
-                    ].map((row) => (
+                    {correlationMatrix.map((row) => (
                       <TableRow key={row.asset}>
                         <TableHead className="font-medium">{row.asset}</TableHead>
                         <TableCell className="text-center">{row.BBCA.toFixed(2)}</TableCell>
@@ -322,13 +381,7 @@ export default function PortfolioPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {[
-                      { ticker: "BBCA", name: "Bank Central Asia", shares: 50000, avgCost: 8500, current: 9125, mktVal: 456250000, cost: 425000000, pnl: 31250000, pnlPct: 7.35, weight: 36.5, beta: 1.12, var95: 2.8 },
-                      { ticker: "BMRI", name: "Bank Mandiri", shares: 80000, avgCost: 5800, current: 6250, mktVal: 500000000, cost: 464000000, pnl: 36000000, pnlPct: 7.76, weight: 40.0, beta: 1.15, var95: 3.1 },
-                      { ticker: "TLKM", name: "Telkom Indonesia", shares: 30000, avgCost: 3200, current: 3010, mktVal: 90300000, cost: 96000000, pnl: -5700000, pnlPct: -5.94, weight: 7.2, beta: 0.85, var95: 1.9 },
-                      { ticker: "BBRI", name: "Bank Rakyat Indonesia", shares: 60000, avgCost: 4800, current: 5180, mktVal: 310800000, cost: 288000000, pnl: 22800000, pnlPct: 7.92, weight: 24.8, beta: 1.08, var95: 2.5 },
-                      { ticker: "ASII", name: "Astra International", shares: 20000, avgCost: 5500, current: 5200, mktVal: 104000000, cost: 110000000, pnl: -6000000, pnlPct: -5.45, weight: 8.3, beta: 1.25, var95: 3.2 },
-                    ].map((holding) => (
+                    {portfolio.positions.map((holding) => (
                       <TableRow key={holding.ticker}>
                         <TableCell className="font-medium">{holding.ticker}</TableCell>
                         <TableCell>{holding.name}</TableCell>
@@ -410,14 +463,7 @@ export default function PortfolioPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    [
-                      { month: "Jan 2024", port: 2.45, bench: 1.82, excess: 0.63, cum: 2.45 },
-                      { month: "Feb 2024", port: 1.87, bench: 1.45, excess: 0.42, cum: 4.36 },
-                      { month: "Mar 2024", port: -0.85, bench: -1.12, excess: 0.27, cum: 3.48 },
-                      { month: "Apr 2024", port: 3.12, bench: 2.67, excess: 0.45, cum: 6.71 },
-                      { month: "May 2024", port: 1.23, bench: 0.89, excess: 0.34, cum: 7.98 },
-                      { month: "Jun 2024", port: 2.01, bench: 1.78, excess: 0.23, cum: 10.16 },
-                    ].map((m) => (
+                    {monthlyReturns.map((m) => (
                       <TableRow key={m.month}>
                         <TableCell className="font-medium">{m.month}</TableCell>
                         <TableCell className="text-center">{m.port >= 0 ? "+" : ""}{m.port}%</TableCell>
@@ -452,88 +498,75 @@ export default function PortfolioPage() {
                   <p className="text-2xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
                   <p className="text-sm text-muted-foreground">{metric.label}</p>
                   <p className="text-xs text-muted-foreground">{metric.desc}</p>
-                </Card>
-              ))}
-            </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Correlation Matrix</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead></TableHead>
-                        <TableHead className="text-center">BBCA</TableHead>
-                        <TableHead className="text-center">BMRI</TableHead>
-                        <TableHead className="text-center">TLKM</TableHead>
-                        <TableHead className="text-center">BBRI</TableHead>
-                        <TableHead className="text-center">ASII</TableHead>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Correlation Matrix</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead></TableHead>
+                      <TableHead className="text-center">BBCA</TableHead>
+                      <TableHead className="text-center">BMRI</TableHead>
+                      <TableHead className="text-center">TLKM</TableHead>
+                      <TableHead className="text-center">BBRI</TableHead>
+                      <TableHead className="text-center">ASII</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {correlationMatrix.map((row) => (
+                      <TableRow key={row.asset}>
+                        <TableHead className="font-medium">{row.asset}</TableHead>
+                        <TableCell className="text-center">{row.BBCA.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">{row.BMRI.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">{row.TLKM.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">{row.BBRI.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">{row.ASII.toFixed(2)}</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        { asset: "BBCA", BBCA: 1.00, BMRI: 0.85, TLKM: 0.35, BBRI: 0.78, ASII: 0.42 },
-                        { asset: "BMRI", BBCA: 0.85, BMRI: 1.00, TLKM: 0.28, BBRI: 0.82, ASII: 0.38 },
-                        { asset: "TLKM", BBCA: 0.35, BMRI: 0.28, TLKM: 1.00, BBRI: 0.22, ASII: 0.15 },
-                        { asset: "BBRI", BBCA: 0.78, BMRI: 0.82, TLKM: 0.22, BBRI: 1.00, ASII: 0.35 },
-                        { asset: "ASII", BBCA: 0.42, BMRI: 0.38, TLKM: 0.15, BBRI: 0.35, ASII: 1.00 },
-                      ].map((row) => (
-                        <TableRow key={row.asset}>
-                          <TableHead className="font-medium">{row.asset}</TableHead>
-                          <TableCell className="text-center">{row.BBCA.toFixed(2)}</TableCell>
-                          <TableCell className="text-center">{row.BMRI.toFixed(2)}</TableCell>
-                          <TableCell className="text-center">{row.TLKM.toFixed(2)}</TableCell>
-                          <TableCell className="text-center">{row.BBRI.toFixed(2)}</TableCell>
-                          <TableCell className="text-center">{row.ASII.toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="attribution" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Factor Attribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { factor: "Market", exposure: 1.05, contrib: 0.85 },
-                    { factor: "Size", exposure: -0.15, contrib: -0.08 },
-                    { factor: "Value", exposure: 0.25, contrib: 0.18 },
-                    { factor: "Momentum", exposure: 0.35, contrib: 0.28 },
-                    { factor: "Quality", exposure: 0.45, contrib: 0.32 },
-                    { factor: "Volatility", exposure: -0.10, contrib: -0.05 },
-                    { factor: "Liquidity", exposure: 0.20, contrib: 0.12 },
-                  ].map((factor) => (
-                    <Card key={factor.factor} className={`border-l-4 ${factor.contrib >= 0 ? "border-l-green-500" : "border-l-red-500"}`}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{factor.factor}</span>
-                          <span className={`font-bold ${factor.contrib >= 0 ? "text-green-600" : "text-red-600"}`}>
-                            {factor.contrib >= 0 ? "+" : ""}{factor.contrib}%
-                          </span>
-                        </div>
-                        <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${factor.contrib >= 0 ? "bg-green-500" : "bg-red-500"}`}
-                            style={{ width: `${Math.abs(factor.contrib) * 200}%` }}
-                          />
-                        </div>
-                        <div className="mt-1 text-xs text-muted-foreground flex justify-between">
-                          <span>Exposure: {factor.exposure >= 0 ? "+" : ""}{factor.exposure}</span>
-                          <span>Contribution: {factor.contrib >= 0 ? "+" : ""}{factor.contrib}%</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+        <TabsContent value="attribution" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Factor Attribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {factorExposure.map((factor) => (
+                  <Card key={factor.factor} className={`border-l-4 ${factor.contrib >= 0 ? "border-l-green-500" : "border-l-red-500"}`}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{factor.factor}</span>
+                        <span className={`font-bold ${factor.contrib >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {factor.contrib >= 0 ? "+" : ""}{factor.contrib}%
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${factor.contrib >= 0 ? "bg-green-500" : "bg-red-500"}`}
+                          style={{ width: `${Math.abs(factor.contrib) * 200}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground flex justify-between">
+                        <span>Exposure: {factor.exposure >= 0 ? "+" : ""}{factor.exposure}</span>
+                        <span>Contribution: {factor.contrib >= 0 ? "+" : ""}{factor.contrib}%</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -564,13 +597,7 @@ export default function PortfolioPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    [
-                      { date: "2024-01-15", ticker: "BBCA", type: "BUY", shares: 5000, price: 9000, value: 45000000, fees: 45000, net: 45045000 },
-                      { date: "2024-01-10", ticker: "BMRI", type: "BUY", shares: 10000, price: 6100, value: 61000000, fees: 61000, net: 61061000 },
-                      { date: "2024-01-08", ticker: "TLKM", type: "SELL", shares: 5000, price: 3050, value: 15250000, fees: 15250, net: 15234750 },
-                      { date: "2024-01-05", ticker: "BBRI", type: "BUY", shares: 8000, price: 5050, value: 40400000, fees: 40400, net: 40440400 },
-                      { date: "2024-01-03", ticker: "ASII", type: "SELL", shares: 3000, price: 5300, value: 15900000, fees: 15900, net: 15884100 },
-                    ].map((tx) => (
+                    {transactions.map((tx) => (
                       <TableRow key={tx.date}>
                         <TableCell>{tx.date}</TableCell>
                         <TableCell className="font-medium">{tx.ticker}</TableCell>
@@ -585,7 +612,7 @@ export default function PortfolioPage() {
                         <TableCell className="text-right text-muted-foreground">Rp {tx.fees.toLocaleString()}</TableCell>
                         <TableCell className="text-right font-medium">Rp {tx.net.toLocaleString()}</TableCell>
                       </TableRow>
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -594,5 +621,5 @@ export default function PortfolioPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

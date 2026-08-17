@@ -3,13 +3,12 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   BarChart3,
   Search,
   List,
-  Compare,
+  GitCompare,
   BarChart2,
   Globe,
   Calendar,
@@ -18,27 +17,8 @@ import {
   AlertTriangle,
   Settings,
   Menu,
-  X,
   ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Market", href: "/market", icon: BarChart3 },
-  { name: "Screener", href: "/screener", icon: Search },
-  { name: "Stocks", href: "/stocks", icon: List },
-  { name: "Compare", href: "/compare", icon: Compare },
-  { name: "Sectors", href: "/sectors", icon: BarChart2 },
-  { name: "Macro", href: "/macro", icon: Globe },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Portfolio", href: "/portfolio", icon: Briefcase },
-  { name: "Backtest", href: "/backtest", icon: Activity },
-  { name: "Alerts", href: "/alerts", icon: AlertTriangle },
-  { name: "Research", href: "/research", icon: Settings },
-];
 
 const macroNavigation = [
   { name: "Macro", href: "/macro", icon: Globe },
@@ -128,7 +108,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             items={[
               { name: "Screener", href: "/screener", icon: Search },
               { name: "Stocks", href: "/stocks", icon: List },
-              { name: "Compare", href: "/compare", icon: Compare },
+              { name: "Compare", href: "/compare", icon: GitCompare },
               { name: "Sectors", href: "/sectors", icon: BarChart2 },
             ]}
           />
@@ -183,7 +163,6 @@ function NavSection({ title, items }: NavSectionProps) {
             "text-muted-foreground hover:text-foreground hover:bg-accent",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           )}
-          href={item.href}
         >
           <item.icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           <span className="truncate">{item.name}</span>

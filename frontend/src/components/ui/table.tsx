@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {}
+type TableProps = React.TableHTMLAttributes<HTMLTableElement>
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
   ({ className, ...props }, ref) => (
@@ -47,7 +47,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
   ))
 TableRow.displayName = "TableRow"
 
-interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {}
+type TableRowProps = React.HTMLAttributes<HTMLTableRowElement>
 
 const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (

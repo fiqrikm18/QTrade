@@ -21,9 +21,11 @@ owns the transaction boundary so a scan is atomic and rollbackable in tests.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import Any
 
 import polars as pl
 
@@ -31,6 +33,8 @@ from app.application.services.data_quality import validate_ohlcv
 from app.application.services.features import FEATURE_VERSION, build_technical_features
 from app.config.settings import get_settings
 from app.domain.fundamental.ratios import (
+    FundamentalSnapshot,
+    RatioSet,
     calculate_ratios,
     latest_snapshot,
 )
@@ -557,13 +561,13 @@ async def run_market_scan(
 
 def _history_ratios(
     ticker: str,
-    stmt_buckets: dict[str, list],
+    stmt_buckets: dict[str, list[FundamentalSnapshot]],
     asof: date,
     price_map: dict[str, float],
-    shares_for,
-) -> list:
+    shares_for: Callable[[str], float | None],
+) -> list[RatioSet]:
     snaps = stmt_buckets.get(ticker, [])
-    out: list = []
+    out: list[RatioSet] = []
     for s in snaps:
         if s.available_at > asof or s.asof_date > asof:
             continue
@@ -573,13 +577,14 @@ def _history_ratios(
     return out
 
 
-def _factor_score(fund_result: dict | None) -> float | None:
+def _factor_score(fund_result: dict[str, Any] | None) -> float | None:
     if fund_result is None:
         return None
-    comps = fund_result.get("score_components", {})
-    quality = comps.get("quality")
-    if isinstance(quality, dict):
-        return _to_float(quality.get("score"))
+    comps: dict[str, Any] = fund_result.get("score_components", {})
+    quality_obj: object = comps.get("quality")
+    if isinstance(quality_obj, dict):
+        score_obj: object = quality_obj.get("score")  # type: ignore[union-attr]
+        return _to_float(score_obj)  # pyright: ignore[reportUnknownArgumentType]
     return None
 
 

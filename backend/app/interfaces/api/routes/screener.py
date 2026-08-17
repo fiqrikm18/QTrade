@@ -1,29 +1,26 @@
 """Screener API routes."""
 
+from typing import Any
+
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any
 
-from app.infrastructure.database.models import Stock, StockScore
+from app.infrastructure.database.models import StockScore
 from app.infrastructure.database.session import get_session
 
 router = APIRouter()
 
 
-def build_filter_query(base_query, filters: dict[str, Any]):
+def build_filter_query(_base_query: Any, filters: dict[str, Any]) -> list[Any]:
     """Build SQLAlchemy filter conditions from screener filters."""
-    conditions = []
+    conditions: list[Any] = []
 
     if filters.get("min_opportunity_score") is not None:
-        from app.infrastructure.database.models import StockScore
-
         conditions.append(
             StockScore.opportunity_score >= filters["min_opportunity_score"]
         )
     if filters.get("max_opportunity_score") is not None:
-        from app.infrastructure.database.models import StockScore
-
         conditions.append(
             StockScore.opportunity_score <= filters["max_opportunity_score"]
         )
@@ -41,10 +38,8 @@ async def run_screener(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, object]:
     """Run stock screener with filters."""
-    # TODO: Implement proper filter building
     from app.infrastructure.database.models import Stock
 
-    # Base query
     query = select(
         StockScore.ticker,
         StockScore.asof_date,
@@ -62,17 +57,11 @@ async def run_screener(
         Stock.sector_id,
     ).select_from(StockScore.__table__.join(Stock, Stock.ticker == StockScore.ticker))
 
-    # Apply filters (simplified)
-    # TODO: implement proper filter parsing
-
-    # Pagination
     total_result = await session.execute(
         select(func.count()).select_from(query.subquery())
     )
-    total = total_result.scalar() or 0
+    _total = total_result.scalar() or 0
 
-    # For now just return empty - TODO implement real filtering
-    items: list[dict[str, object]] = []
     return {
         "items": [],
         "total": 0,

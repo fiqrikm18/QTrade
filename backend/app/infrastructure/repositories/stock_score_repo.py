@@ -2,6 +2,7 @@
 
 import json
 from datetime import date
+from typing import Any, cast
 
 import redis.asyncio as redis
 from sqlalchemy import func, select
@@ -27,7 +28,7 @@ class StockScoreRepository:
         if not rows:
             return 0
         stmt = pg_insert(StockScore).values(rows)
-        set_ = {
+        set_: dict[str, Any] = {
             col: stmt.excluded[col]
             for col in rows[0]
             if col
@@ -40,17 +41,17 @@ class StockScoreRepository:
         )
         result = await self._session.execute(upsert)
         await self._session.flush()
-        return int(result.rowcount or 0)
+        rc = cast("int | None", getattr(result, "rowcount", None))
+        return rc or 0
 
     async def count_scores(self, asof: date, profile: str) -> int:
-        return int(
-            await self._session.scalar(
-                select(func.count())
-                .select_from(StockScore)
-                .where(StockScore.asof_date == asof)
-                .where(StockScore.profile == profile)
-            )
+        n = await self._session.scalar(
+            select(func.count())
+            .select_from(StockScore)
+            .where(StockScore.asof_date == asof)
+            .where(StockScore.profile == profile)
         )
+        return int(n or 0)
 
 
 async def cache_scan_rankings(
@@ -81,7 +82,9 @@ async def cache_scan_rankings(
         }
     )
     key = f"scan:{profile}:{asof.isoformat()}"
-    rc = redis.Redis.from_url(redis_url)
+    # ponytail: redis-py 5 stubs lack a precise from_url return signature under
+    # pyright strict; this is a third-party typing gap (redis.Redis is accurate).
+    rc: redis.Redis = redis.Redis.from_url(redis_url)  # pyright: ignore[reportUnknownMemberType]
     try:
         await rc.setex(key, _SCAN_CACHE_TTL, body)
     finally:

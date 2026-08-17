@@ -14,8 +14,8 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar isOpen={true} onToggle={() => {}} />
-      <Topbar onMenuClick={() => {}} isSidebarOpen={true} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
       <main className={cn(
         "pt-16 transition-all duration-300 ease-in-out",
         "lg:pl-64",

@@ -1,11 +1,5 @@
 "use client"
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { Search, Bell, Settings, User, ChevronDown, ChevronLeft, Sun, Moon } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface TopbarProps {
@@ -56,7 +50,6 @@ export function Topbar({ onMenuClick, isSidebarOpen }: TopbarProps) {
               type="text"
               placeholder="Search ticker, company, metric, sector..."
               className="w-full h-9 pl-10 pr-4 bg-background border border-border rounded-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-              placeholder="Search ticker, company, metric, sector..."
             />
           </div>
         </div>

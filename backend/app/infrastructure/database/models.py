@@ -172,7 +172,7 @@ class StockScore(AuditMixin, Base):
     macro_score: Mapped[float | None] = mapped_column(Numeric)
     risk_score: Mapped[float | None] = mapped_column(Numeric)
     ml_score: Mapped[float | None] = mapped_column(Numeric)
-    score_components: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    score_components: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
     classification: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Numeric)
     drivers: Mapped[list[str]] = mapped_column(

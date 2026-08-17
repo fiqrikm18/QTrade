@@ -1,25 +1,47 @@
-"use client"
+"use client";
 
-import { AppShell } from "@/components/ui/appshell"
-import { Sidebar } from "@/components/ui/sidebar"
-import { Topbar } from "@/components/ui/topbar"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { Database, AlertCircle, CheckCircle, XCircle, AlertTriangle, RefreshCw, Download, Settings, Clock, Shield, Search, Filter, Trash2, Edit, Plus, Eye, BarChart3, Database as DatabaseIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { Download, Filter, Search, ChevronDown, ChevronUp, Settings, Database, AlertCircle, CheckCircle, XCircle, AlertTriangle, RefreshCw, Shield, Clock, Search, Filter, Trash2, Edit, Plus, Eye, BarChart3, Database as DatabaseIcon } from "lucide-react"
+import { useState } from "react";
+import {
+  Database,
+  AlertTriangle,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  RefreshCw,
+  Download,
+  Settings,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  GitCompare,
+  Shield,
+  Search,
+  Filter,
+  Clock,
+  BarChart3,
+  FileText,
+  Tag,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DataQualityPage() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("overview");
 
   const qualityMetrics = [
     { name: "Market Data", score: 99, status: "excellent", issues: 2, lastUpdate: "2024-01-15 09:24:31" },
@@ -27,7 +49,7 @@ export default function DataQualityPage() {
     { metric: "Corporate Actions", score: 100, status: "excellent", issues: 0, lastUpdate: "2024-01-15 06:00:00" },
     { metric: "Macro", score: 98, status: "excellent", issues: 1, lastUpdate: "2024-01-15 08:30:00" },
     { metric: "News", score: 97, status: "good", issues: 3, lastUpdate: "2024-01-15 09:15:00" },
-  ]
+  ];
 
   const issues = [
     { id: 1, table: "ohlcv_daily", ticker: "BBCA", issue: "Missing trading day", severity: "medium", detected: "2024-01-15 09:00:00", status: "open" },
@@ -36,7 +58,7 @@ export default function DataQualityPage() {
     { id: 4, table: "ohlcv_daily", ticker: "BBRI", issue: "Duplicate row", severity: "low", detected: "2024-01-15 09:00:00", status: "resolved" },
     { id: 5, table: "financial_ratios", ticker: "BMRI", issue: "Stale data (3 days old)", severity: "medium", detected: "2024-01-15 09:00:00", status: "in_progress" },
     { id: 6, table: "ohlcv_daily", ticker: "TLKM", issue: "Price gap > 10%", severity: "high", detected: "2024-01-14 16:20:00", status: "in_progress" },
-  ]
+  ];
 
   const freshnessData = [
     { table: "ohlcv_daily", lastUpdate: "2024-01-15 09:24:31", maxDate: "2024-01-12", rows: 48000, cadence: "Daily (15:50 WIB)", status: "fresh" },
@@ -45,40 +67,71 @@ export default function DataQualityPage() {
     { table: "economic_indicators", lastUpdate: "2024-01-15 08:30:00", maxDate: "2024-01-12", rows: 500, cadence: "Daily", status: "fresh" },
     { table: "economic_events", lastUpdate: "2024-01-15 06:00:00", maxDate: "2024-01-31", rows: 450, cadence: "Daily", status: "fresh" },
     { table: "news", lastUpdate: "2024-01-15 09:15:00", maxDate: "2024-01-15", rows: 2500, cadence: "15 min", status: "fresh" },
-  ]
+  ];
+
+  const tickerQualityData = [
+    { ticker: "BBCA", lastBarDate: "2024-01-12", gaps: 1, nulls: 0, status: "fresh" },
+    { ticker: "TLKM", lastBarDate: "2024-01-12", gaps: 2, nulls: 1, status: "stale" },
+    { ticker: "ASII", lastBarDate: "2024-01-12", gaps: 0, nulls: 0, status: "fresh" },
+    { ticker: "BBRI", lastBarDate: "2024-01-12", gaps: 0, nulls: 0, status: "fresh" },
+    { ticker: "BMRI", lastBarDate: "2024-01-11", gaps: 3, nulls: 2, status: "stale" },
+  ];
+
+  const totalTickers = 5;
+  const freshCount = freshnessData.filter((f) => f.status === "fresh").length;
+  const staleCount = freshnessData.filter((f) => f.status === "stale").length;
+  const errorCount = issues.filter((i) => i.severity === "high").length;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "excellent": return <Badge variant="success">Excellent</Badge>
-      case "good": return <Badge variant="default">Good</Badge>
-      case "fair": return <Badge variant="warning">Fair</Badge>
-      case "poor": return <Badge variant="destructive">Poor</Badge>
-      case "fresh": return <Badge variant="success">Fresh</Badge>
-      case "stale": return <Badge variant="warning">Stale</Badge>
-      case "open": return <Badge variant="destructive">Open</Badge>
-      case "in_progress": return <Badge variant="warning">In Progress</Badge>
-      case "resolved": return <Badge variant="success">Resolved</Badge>
-      default: return <Badge variant="secondary">Unknown</Badge>
+      case "excellent":
+        return <Badge variant="success">Excellent</Badge>;
+      case "good":
+        return <Badge variant="default">Good</Badge>;
+      case "fair":
+        return <Badge variant="warning">Fair</Badge>;
+      case "poor":
+        return <Badge variant="destructive">Poor</Badge>;
+      case "fresh":
+        return <Badge variant="success">Fresh</Badge>;
+      case "stale":
+        return <Badge variant="warning">Stale</Badge>;
+      case "open":
+        return <Badge variant="destructive">Open</Badge>;
+      case "in_progress":
+        return <Badge variant="warning">In Progress</Badge>;
+      case "resolved":
+        return <Badge variant="success">Resolved</Badge>;
+      default:
+        return <Badge variant="secondary">Unknown</Badge>;
     }
-  }
+  };
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
-      case "high": return <Badge variant="destructive">High</Badge>
-      case "medium": return <Badge variant="warning">Medium</Badge>
-      case "low": return <Badge variant="secondary">Low</Badge>
-      default: return <Badge variant="secondary">Unknown</Badge>
+      case "high":
+        return <Badge variant="destructive">High</Badge>;
+      case "medium":
+        return <Badge variant="warning">Medium</Badge>;
+      case "low":
+        return <Badge variant="secondary">Low</Badge>;
+      default:
+        return <Badge variant="secondary">Unknown</Badge>;
     }
-  }
+  };
 
   const getIssueStatusBadge = (status: string) => {
     switch (status) {
-      case "open": return <Badge variant="destructive">Open</Badge>
-      case "in_progress": return <Badge variant="warning">In Progress</Badge>
-      case "resolved": return <Badge variant="success">Resolved</Badge>
-      default: return <Badge variant="secondary">Unknown</Badge>
+      case "open":
+        return <Badge variant="destructive">Open</Badge>;
+      case "in_progress":
+        return <Badge variant="warning">In Progress</Badge>;
+      case "resolved":
+        return <Badge variant="success">Resolved</Badge>;
+      default:
+        return <Badge variant="secondary">Unknown</Badge>;
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -107,31 +160,59 @@ export default function DataQualityPage() {
         </div>
       </div>
 
-      {/* Overall Quality Score */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        {qualityMetrics.map((metric) => (
-          <Card key={metric.name} className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-12 h-12 bg-muted/50 rounded-tr-lg" />
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-muted-foreground">{metric.name}</span>
-                {getStatusBadge(metric.status || metric.metric)}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Tickers</p>
+                <p className="text-3xl font-bold">{totalTickers}</p>
               </div>
-              <div className="text-3xl font-bold">{metric.score}</div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {metric.issues} issues • Updated {metric.lastUpdate}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+              <Database className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Fresh</p>
+                <p className="text-3xl font-bold text-green-600">{freshCount}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-500/30" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Stale</p>
+                <p className="text-3xl font-bold text-yellow-600">{staleCount}</p>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-yellow-500/30" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Errors</p>
+                <p className="text-3xl font-bold text-red-600">{errorCount}</p>
+              </div>
+              <AlertCircle className="h-8 w-8 text-red-500/30" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="overview" onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="issues">Issues</TabsTrigger>
           <TabsTrigger value="freshness">Freshness</TabsTrigger>
-          <TabsTrigger value="checks">Quality Checks</TabsTrigger>
+          <TabsTrigger value="tickers">Ticker Quality</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -143,14 +224,26 @@ export default function DataQualityPage() {
               <CardContent>
                 <div className="space-y-3">
                   {qualityMetrics.map((metric) => (
-                    <div key={metric.name} className="flex items-center justify-between py-2">
+                    <div key={metric.name || metric.metric} className="flex items-center justify-between py-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric.status === "excellent" ? "#22c55e" : metric.status === "good" ? "#3b82f6" : metric.status === "fair" ? "#f59e0b" : "#ef4444" }} />
-                        <span className="text-sm font-medium">{metric.name}</span>
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor:
+                              metric.status === "excellent"
+                                ? "#22c55e"
+                                : metric.status === "good"
+                                ? "#3b82f6"
+                                : metric.status === "fair"
+                                ? "#f59e0b"
+                                : "#ef4444",
+                          }}
+                        />
+                        <span className="text-sm font-medium">{metric.name || metric.metric}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-lg">{metric.score}</span>
-                        {getStatusBadge(metric.status || metric.metric)}
+                        {getStatusBadge(metric.status)}
                       </div>
                     </div>
                   ))}
@@ -167,7 +260,12 @@ export default function DataQualityPage() {
                   {freshnessData.map((item) => (
                     <div key={item.table} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                       <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.status === "fresh" ? "#22c55e" : "#ef4444" }} />
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor: item.status === "fresh" ? "#22c55e" : "#ef4444",
+                          }}
+                        />
                         <span className="font-medium font-mono text-sm">{item.table}</span>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -180,7 +278,7 @@ export default function DataQualityPage() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
+</CardContent>
             </Card>
           </div>
         </TabsContent>
@@ -190,7 +288,7 @@ export default function DataQualityPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base">Data Quality Issues</CardTitle>
               <div className="flex items-center gap-2">
-                <Select value="all" onValueChange={() => {}} className="w-40">
+                <Select value="all" onValueChange={() => {}}>
                   <SelectTrigger className="w-36">
                     <SelectValue placeholder="All Severity" />
                   </SelectTrigger>
@@ -201,7 +299,7 @@ export default function DataQualityPage() {
                     <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value="all" onValueChange={() => {}} className="w-40">
+                <Select value="all" onValueChange={() => {}}>
                   <SelectTrigger className="w-36">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
@@ -241,112 +339,115 @@ export default function DataQualityPage() {
                         <TableCell>{getIssueStatusBadge(issue.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-6 w-6"><Eye className="h-3 w-3" /></Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6"><Edit className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <Edit className="h-3 w-3" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="freshness" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">Data Freshness</CardTitle>
-                <Button variant="outline" size="sm">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh All
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Table</TableHead>
-                        <TableHead className="w-40">Last Updated</TableHead>
-                        <TableHead className="w-28">Max Date</TableHead>
-                        <TableHead className="w-20">Rows</TableHead>
-                        <TableHead className="w-32">Cadence</TableHead>
-                        <TableHead className="w-24">Status</TableHead>
-                        <TableHead className="w-24">Action</TableHead>
+        <TabsContent value="freshness" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base">Data Freshness</CardTitle>
+              <Button variant="outline" size="sm">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh All
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Table</TableHead>
+                      <TableHead className="w-40">Last Updated</TableHead>
+                      <TableHead className="w-28">Max Date</TableHead>
+                      <TableHead className="w-20">Rows</TableHead>
+                      <TableHead className="w-32">Cadence</TableHead>
+                      <TableHead className="w-24">Status</TableHead>
+                      <TableHead className="w-24">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {freshnessData.map((item) => (
+                      <TableRow key={item.table}>
+                        <TableCell className="font-mono text-sm">{item.table}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.lastUpdate}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.maxDate}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{item.rows.toLocaleString()}</TableCell>
+                        <TableCell>{item.cadence}</TableCell>
+                        <TableCell>
+                          {item.status === "fresh" ? (
+                            <Badge variant="success">Fresh</Badge>
+                          ) : (
+                            <Badge variant="warning">Stale</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Refresh">
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {freshnessData.map((item) => (
-                        <TableRow key={item.table}>
-                          <TableCell className="font-mono text-sm">{item.table}</TableCell>
-                          <TableCell className="font-mono text-xs">{item.lastUpdate}</TableCell>
-                          <TableCell className="font-mono text-xs">{item.maxTradeDate}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{item.rowCount.toLocaleString()}</TableCell>
-                          <TableCell>{item.cadence}</TableCell>
-                          <TableCell>{item.status === "fresh" ? <Badge variant="success">Fresh</Badge> : <Badge variant="warning">Stale</Badge>}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Refresh">
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="checks" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">Quality Checks</CardTitle>
-                <Button variant="outline" size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Check
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {[
-                    { name: "OHLCV Missing Days Check", table: "ohlcv_daily", schedule: "Daily 16:15", status: "active", lastRun: "2024-01-15 16:15:00", nextRun: "2024-01-16 16:15:00" },
-                    { name: "OHLCV Anomaly Detection", table: "ohlcv_daily", schedule: "Daily 16:30", status: "active", lastRun: "2024-01-15 16:30:00", nextRun: "2024-01-16 16:30:00" },
-                    { name: "Fundamental Data Completeness", table: "financial_statements", schedule: "Daily 17:00", status: "active", lastRun: "2024-01-15 17:00:00", nextRun: "2024-01-16 17:00:00" },
-                    { name: "Corporate Actions Validation", table: "corporate_actions", schedule: "Daily 16:30", status: "active", lastRun: "2024-01-15 16:30:00", nextRun: "2024-01-16 16:30:00" },
-                    { name: "Macro Data Freshness", table: "economic_indicators", schedule: "Daily 18:00", status: "active", lastRun: "2024-01-15 18:00:00", nextRun: "2024-01-16 18:00:00" },
-                    { name: "News Deduplication", table: "news", schedule: "Every 15 min", status: "active", lastRun: "2024-01-15 09:15:00", nextRun: "2024-01-15 09:30:00" },
-                    { name: "Corporate Actions Validation", table: "corporate_actions", schedule: "Daily 16:30", status: "paused", lastRun: "2024-01-14 16:30:00", nextRun: "Paused" },
-                    { name: "Index Constituency Check", table: "stocks", schedule: "Weekly Mon 06:00", status: "active", lastRun: "2024-01-15 06:00:00", nextRun: "2024-01-22 06:00:00" },
-                  ].map((check) => (
-                    <div key={check.name} className="flex items-center justify-between p-4 border-b border-border/50 last:border-0">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{check.name}</span>
-                          <Badge variant={check.status === "active" ? "success" : "secondary"} className="text-xs">
-                            {check.status}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{check.table} • {check.schedule}</p>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Last: {check.lastRun}</span>
-                        <span>Next: {check.nextRun}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Run now"><RefreshCw className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Edit"><Edit className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:bg-red-50" title="Delete"><Trash2 className="h-3 w-3" /></Button>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+        <TabsContent value="tickers" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base">Per-Ticker Quality</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ticker</TableHead>
+                      <TableHead className="w-32">Last Bar Date</TableHead>
+                      <TableHead className="w-20"># Gaps</TableHead>
+                      <TableHead className="w-20"># Nulls</TableHead>
+                      <TableHead className="w-24">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tickerQualityData.map((item) => (
+                      <TableRow key={item.ticker}>
+                        <TableCell className="font-mono font-medium">{item.ticker}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.lastBarDate}</TableCell>
+                        <TableCell className="text-center font-mono">{item.gaps}</TableCell>
+                        <TableCell className="text-center font-mono">{item.nulls}</TableCell>
+                        <TableCell>
+                          {item.status === "fresh" ? (
+                            <Badge variant="success">Fresh</Badge>
+                          ) : (
+                            <Badge variant="warning">Stale</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

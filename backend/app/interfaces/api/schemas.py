@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
+from pydantic import BaseModel, ConfigDict
+
 
 class MarketOverview(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -191,8 +193,8 @@ class SectorRotationResponse(BaseModel):
 
 
 class MarketOverviewResponse(BaseModel):
-    regime: "MarketRegimeResponse"
-    breadth: "MarketBreadthResponse"
+    regime: MarketRegimeResponse
+    breadth: MarketBreadthResponse
     top_gainers: list[dict[str, object]]
     top_losers: list[dict[str, object]]
     top_opportunities: list[dict[str, object]]

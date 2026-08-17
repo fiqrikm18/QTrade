@@ -1,39 +1,108 @@
-"use client"
+"use client";
 
-import { AppShell } from "@/components/ui/appshell"
-import { Sidebar } from "@/components/ui/sidebar"
-import { Topbar } from "@/components/ui/topbar"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { User, Bell, Shield, Palette, Database, Globe, Key, Save, RefreshCw, Download, Upload, Moon, Sun, Monitor, Smartphone, Tablet, CreditCard, Mail, Lock, Key as KeyIcon, Shield as ShieldIcon, Bell as BellIcon, Palette as PaletteIcon, Database as DatabaseIcon, Globe as GlobeIcon, Key as KeyIcon2, RefreshCw as RefreshCwIcon, Download as DownloadIcon, Upload as UploadIcon, Moon as MoonIcon, Sun as SunIcon, Monitor as MonitorIcon, Smartphone as SmartphoneIcon, Tablet as TabletIcon, CreditCard as CreditCardIcon, Mail as MailIcon, Lock as LockIcon, Key as KeyIcon3, Shield as ShieldIcon2, Bell as BellIcon2, Palette as PaletteIcon2, Database as DatabaseIcon2, Globe as GlobeIcon2, Key as KeyIcon4, RefreshCw as RefreshCwIcon2, Download as DownloadIcon2, Upload as UploadIcon2, Moon as MoonIcon2, Sun as SunIcon2, Monitor as MonitorIcon2, Smartphone as SmartphoneIcon2, Tablet as TabletIcon2, CreditCard as CreditCardIcon2, Mail as MailIcon2, Lock as LockIcon2, Key as KeyIcon5, Shield as ShieldIcon3, Bell as BellIcon3, Palette as PaletteIcon3, Database as DatabaseIcon3, Globe as GlobeIcon3, Key as KeyIcon6, RefreshCw as RefreshCwIcon3, Download as DownloadIcon3, Upload as UploadIcon3, Moon as MoonIcon3, Sun as SunIcon3, Monitor as MonitorIcon3, Smartphone as SmartphoneIcon3, Tablet as TabletIcon3, CreditCard as CreditCardIcon3, Mail as MailIcon3, Lock as LockIcon3, Key as KeyIcon7, Shield as ShieldIcon4, Bell as BellIcon4, Palette as PaletteIcon4, Database as DatabaseIcon4, Globe as GlobeIcon4, Key as KeyIcon8 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { Save, RefreshCw, Download, Upload, Moon, Sun, Monitor, Smartphone, Tablet, CreditCard, Mail, Lock, Key, Shield, Bell, Palette, Database, Globe, Key as KeyIcon9, RefreshCw as RefreshCwIcon, Download as DownloadIcon, Upload as UploadIcon, Moon, Sun, Monitor, Smartphone, Tablet, CreditCard, Mail, Lock, Key, Shield, Bell, Palette, Database, Globe } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react";
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Database,
+  Globe,
+  Key,
+  Save,
+  RefreshCw,
+  Download,
+  Upload,
+  Moon,
+  Sun,
+  Monitor,
+  Smartphone,
+  Tablet,
+  CreditCard,
+  Mail,
+  Lock,
+  Copy,
+  FileText,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+type TabValue = "general" | "appearance" | "notifications" | "data" | "advanced";
+
+type NotificationSettings = {
+  email: boolean;
+  priceAlerts: boolean;
+  newsAlerts: boolean;
+  portfolioAlerts: boolean;
+  macroAlerts: boolean;
+  push: boolean;
+};
+
+const emailNotificationItems = [
+  { id: "email", label: "Email notifications", desc: "Receive notifications via email" },
+  { id: "priceAlerts", label: "Price alerts", desc: "Price crossing thresholds" },
+  { id: "newsAlerts", label: "News alerts", desc: "Breaking news and announcements" },
+  { id: "portfolioAlerts", label: "Portfolio alerts", desc: "Portfolio value changes" },
+  { id: "macroAlerts", label: "Macro alerts", desc: "Macroeconomic events" },
+] as const;
+
+const pushNotificationItems = [
+  { id: "push", label: "Push notifications", desc: "Receive push notifications" },
+  { id: "priceAlerts", label: "Price alerts", desc: "Price crossing thresholds" },
+  { id: "newsAlerts", label: "News alerts", desc: "Breaking news and announcements" },
+  { id: "portfolioAlerts", label: "Portfolio alerts", desc: "Portfolio value changes" },
+  { id: "macroAlerts", label: "Macro alerts", desc: "Macroeconomic events" },
+] as const;
+
+const dataRetentionOptions = [
+  { value: "1month", label: "1 Month", desc: "Delete data after 1 month" },
+  { value: "3months", label: "3 Months", desc: "Delete data after 3 months" },
+  { value: "1year", label: "1 Year", desc: "Delete data after 1 year (recommended)" },
+  { value: "forever", label: "Forever", desc: "Keep data indefinitely" },
+] as const;
+
+const themeOptions = [
+  { value: "light" as const, label: "Light", icon: Sun, desc: "Always use light mode" },
+  { value: "dark" as const, label: "Dark", icon: Moon, desc: "Always use dark mode" },
+  { value: "system" as const, label: "System", icon: Monitor, desc: "Match system preference" },
+] as const;
+
+const densityOptions = [
+  { value: "compact", label: "Compact", desc: "Maximum information density" },
+  { value: "default", label: "Default", desc: "Balanced density" },
+  { value: "comfortable", label: "Comfortable", desc: "More whitespace" },
+] as const;
 
 export default function SettingsPage() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [activeTab, setActiveTab] = useState("general")
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system")
-  const [notifications, setNotifications] = useState({
+  const [activeTab, setActiveTab] = useState<TabValue>("general");
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const [notifications, setNotifications] = useState<NotificationSettings>({
     email: true,
     push: true,
     priceAlerts: true,
     newsAlerts: true,
     portfolioAlerts: true,
     macroAlerts: false,
-  })
-  const [dataRetention, setDataRetention] = useState("1year")
+  });
+  const [dataRetention, setDataRetention] = useState("1year");
+
+  const tabs: { value: TabValue; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { value: "general", label: "General", icon: User },
+    { value: "appearance", label: "Appearance", icon: Palette },
+    { value: "notifications", label: "Notifications", icon: Bell },
+    { value: "data", label: "Data & Privacy", icon: Database },
+    { value: "advanced", label: "Advanced", icon: Shield },
+  ];
 
   return (
     <div className="space-y-6">
@@ -44,347 +113,397 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="data">Data & Privacy</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
-        </TabsList>
+      <div className="space-y-6">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Settings sections">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.value}
+              role="tab"
+              aria-selected={activeTab === tab.value}
+              variant={activeTab === tab.value ? "default" : "outline"}
+              className="flex items-center gap-2"
+              onClick={() => setActiveTab(tab.value)}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </Button>
+          ))}
+        </div>
 
-        <TabsContent value="general" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Profile</CardTitle>
-              <CardDescription>Manage your profile information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
-                  <Input id="name" defaultValue="John Doe" className="w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                  <Input id="email" type="email" defaultValue="john.doe@example.com" className="w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
-                  <Input id="phone" type="tel" defaultValue="+62 812-3456-7890" className="w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company" className="text-sm font-medium">Company</Label>
-                  <Input id="company" defaultValue="Quant Analytics Ltd." className="w-full" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="timezone" className="text-sm font-medium">Timezone</Label>
-                <Select defaultValue="Asia/Jakarta">
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Asia/Jakarta">Asia/Jakarta (WIB)</SelectItem>
-                    <SelectItem value="Asia/Singapore">Asia/Singapore (SGT)</SelectItem>
-                    <SelectItem value="Asia/Shanghai">Asia/Shanghai (CST)</SelectItem>
-                    <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
-                    <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => {}}>Save Changes</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="appearance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Theme</CardTitle>
-              <CardDescription>Choose your preferred color theme</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { value: "light", label: "Light", icon: Sun, desc: "Always use light mode" },
-                  { value: "dark", label: "Dark", icon: Moon, desc: "Always use dark mode" },
-                  { value: "system", label: "System", icon: Monitor, desc: "Match system preference" },
-                ].map((theme) => (
-                  <Button
-                    key={theme.value}
-                    variant={theme === "system" ? "default" : "outline"}
-                    className="h-24 flex-col items-start justify-between p-4 text-left"
-                    onClick={() => setTheme(theme.value as "light" | "dark" | "system")}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <theme.icon className="h-6 w-6" />
-                      <span className="font-medium">{theme.label}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{theme.desc}</p>
-                    <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary/20" style={{ width: theme.value === "light" ? "100%" : theme.value === "dark" ? "50%" : "33%" }} />
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Density</CardTitle>
-              <CardDescription>Adjust the density of the interface</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { value: "compact", label: "Compact", desc: "Maximum information density" },
-                  { value: "default", label: "Default", desc: "Balanced density" },
-                  { value: "comfortable", label: "Comfortable", desc: "More whitespace" },
-                ].map((density) => (
-                  <Button
-                    key={density.value}
-                    variant="outline"
-                    className="h-24 flex-col items-start justify-between p-4 text-left"
-                  >
-                    <span className="font-medium">{density.label}</span>
-                    <p className="text-sm text-muted-foreground">{density.desc}</p>
-                    <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary/20" style={{ width: density.value === "compact" ? "100%" : density.value === "default" ? "66%" : "33%" }} />
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Sidebar</CardTitle>
-              <CardDescription>Configure sidebar behavior</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">Auto-collapse</Label>
-                  <p className="text-sm text-muted-foreground">Collapse sidebar on mobile</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">Show icons only when collapsed</Label>
-                  <p className="text-sm text-muted-foreground">Show only icons when sidebar is collapsed</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">Persistent on desktop</Label>
-                  <p className="text-sm text-muted-foreground">Keep sidebar open on desktop</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Email Notifications</CardTitle>
-              <CardDescription>Configure email notification preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { id: "email", label: "Email notifications", desc: "Receive notifications via email" },
-                { id: "priceAlerts", label: "Price alerts", desc: "Price crossing thresholds" },
-                { id: "newsAlerts", label: "News alerts", desc: "Breaking news and announcements" },
-                { id: "portfolioAlerts", label: "Portfolio alerts", desc: "Portfolio value changes" },
-                { id: "macroAlerts", label: "Macro alerts", desc: "Macroeconomic events" },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Switch checked={notifications[item.id as keyof typeof notifications]} onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, [item.id]: checked }))} />
-                    <div>
-                      <Label className="text-sm font-medium">{item.label}</Label>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
+        {activeTab === "general" && (
+          <div className="space-y-6" role="tabpanel" aria-label="General settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Profile</CardTitle>
+                <CardDescription>Manage your profile information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+                    <Input id="name" defaultValue="John Doe" className="w-full" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Push Notifications</CardTitle>
-              <CardDescription>Configure push notification preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { id: "push", label: "Push notifications", desc: "Receive push notifications" },
-                { id: "priceAlerts", label: "Price alerts", desc: "Price crossing thresholds" },
-                { id: "newsAlerts", label: "News alerts", desc: "Breaking news and announcements" },
-                { id: "portfolioAlerts", label: "Portfolio alerts", desc: "Portfolio value changes" },
-                { id: "macroAlerts", label: "Macro alerts", desc: "Macroeconomic events" },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Switch checked={notifications[item.id as keyof typeof notifications]} onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, [item.id]: checked }))} />
-                    <div>
-                      <Label className="text-sm font-medium">{item.label}</Label>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                    <Input id="email" type="email" defaultValue="john.doe@example.com" className="w-full" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
+                    <Input id="phone" type="tel" defaultValue="+62 812-3456-7890" className="w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company" className="text-sm font-medium">Company</Label>
+                    <Input id="company" defaultValue="Quant Analytics Ltd." className="w-full" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timezone" className="text-sm font-medium">Timezone</Label>
+                  <Select defaultValue="Asia/Jakarta">
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Asia/Jakarta">Asia/Jakarta (WIB)</SelectItem>
+                      <SelectItem value="Asia/Singapore">Asia/Singapore (SGT)</SelectItem>
+                      <SelectItem value="Asia/Shanghai">Asia/Shanghai (CST)</SelectItem>
+                      <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                      <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => {}}>Save Changes</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        <TabsContent value="data" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Data Retention</CardTitle>
-              <CardDescription>How long to keep your data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                {[
-                  { value: "1month", label: "1 Month", desc: "Delete data after 1 month" },
-                  { value: "3months", label: "3 Months", desc: "Delete data after 3 months" },
-                  { value: "1year", label: "1 Year", desc: "Delete data after 1 year (recommended)" },
-                  { value: "forever", label: "Forever", desc: "Keep data indefinitely" },
-                ].map((option) => (
-                  <label key={option.value} className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors">
-                    <input type="radio" name="dataRetention" value={option.value} defaultChecked={option.value === "1year"} className="h-4 w-4" />
-                    <div>
-                      <p className="font-medium">{option.label}</p>
+        {activeTab === "appearance" && (
+          <div className="space-y-6" role="tabpanel" aria-label="Appearance settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Theme</CardTitle>
+                <CardDescription>Choose your preferred color theme</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  {themeOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant={theme === option.value ? "default" : "outline"}
+                      className="h-24 flex-col items-start justify-between p-4 text-left"
+                      onClick={() => setTheme(option.value)}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <option.icon className="h-6 w-6" />
+                        <span className="font-medium">{option.label}</span>
+                      </div>
                       <p className="text-sm text-muted-foreground">{option.desc}</p>
+                      <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary/20"
+                          style={{
+                            width:
+                              option.value === "light"
+                                ? "100%"
+                                : option.value === "dark"
+                                ? "50%"
+                                : "33%",
+                          }}
+                        />
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Density</CardTitle>
+                <CardDescription>Adjust the density of the interface</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  {densityOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant="outline"
+                      className="h-24 flex-col items-start justify-between p-4 text-left"
+                    >
+                      <span className="font-medium">{option.label}</span>
+                      <p className="text-sm text-muted-foreground">{option.desc}</p>
+                      <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary/20"
+                          style={{
+                            width:
+                              option.value === "compact"
+                                ? "100%"
+                                : option.value === "default"
+                                ? "66%"
+                                : "33%",
+                          }}
+                        />
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Sidebar</CardTitle>
+                <CardDescription>Configure sidebar behavior</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Auto-collapse</Label>
+                    <p className="text-sm text-muted-foreground">Collapse sidebar on mobile</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Show icons only when collapsed</Label>
+                    <p className="text-sm text-muted-foreground">Show only icons when sidebar is collapsed</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Persistent on desktop</Label>
+                    <p className="text-sm text-muted-foreground">Keep sidebar open on desktop</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === "notifications" && (
+          <div className="space-y-6" role="tabpanel" aria-label="Notifications settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Email Notifications</CardTitle>
+                <CardDescription>Configure email notification preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {emailNotificationItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={notifications[item.id as keyof NotificationSettings]}
+                        onCheckedChange={(checked) =>
+                          setNotifications((prev) => ({ ...prev, [item.id]: checked }))
+                        }
+                      />
+                      <div>
+                        <Label className="text-sm font-medium">{item.label}</Label>
+                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                      </div>
                     </div>
-                  </label>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Data Export</CardTitle>
-              <CardDescription>Export your data in various formats</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
-                  <Download className="h-6 w-6 mb-2" />
-                  <span className="font-medium">CSV Export</span>
-                  <p className="text-sm text-muted-foreground">Export as CSV file</p>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
-                  <FileText className="h-6 w-6 mb-2" />
-                  <span className="font-medium">JSON Export</span>
-                  <p className="text-sm text-muted-foreground">Export as JSON file</p>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
-                  <Download className="h-6 w-6 mb-2" />
-                  <span className="font-medium">Full Backup</span>
-                  <p className="text-sm text-muted-foreground">Complete data backup</p>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Push Notifications</CardTitle>
+                <CardDescription>Configure push notification preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {pushNotificationItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={notifications[item.id as keyof NotificationSettings]}
+                        onCheckedChange={(checked) =>
+                          setNotifications((prev) => ({ ...prev, [item.id]: checked }))
+                        }
+                      />
+                      <div>
+                        <Label className="text-sm font-medium">{item.label}</Label>
+                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Data Deletion</CardTitle>
-              <CardDescription>Permanently delete your account and all data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 border border-destructive bg-destructive/10 rounded-lg">
-                <p className="text-sm text-destructive">This action is irreversible. All your data, including portfolio, alerts, and research, will be permanently deleted.</p>
-              </div>
-              <Button variant="destructive" onClick={() => {}}>
-                Delete Account
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">API Keys</CardTitle>
-              <CardDescription>Manage your API access keys</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                <div>
-                  <p className="font-medium">Default API Key</p>
-                  <p className="text-sm text-muted-foreground font-mono">ihsg_quant_sk_live_****1234</p>
+        {activeTab === "data" && (
+          <div className="space-y-6" role="tabpanel" aria-label="Data & Privacy settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Data Retention</CardTitle>
+                <CardDescription>How long to keep your data</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {dataRetentionOptions.map((option) => (
+                    <label
+                      key={option.value}
+                      className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="radio"
+                        name="dataRetention"
+                        value={option.value}
+                        checked={dataRetention === option.value}
+                        onChange={() => setDataRetention(option.value)}
+                        className="h-4 w-4"
+                      />
+                      <div>
+                        <p className="font-medium">{option.label}</p>
+                        <p className="text-sm text-muted-foreground">{option.desc}</p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm"><Copy className="h-4 w-4" /> Copy</Button>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </div>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Generate New Key
-              </Button>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Webhooks</CardTitle>
-              <CardDescription>Configure webhook endpoints for real-time events</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">No webhooks configured</p>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Webhook
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Cache Management</CardTitle>
-              <CardDescription>Manage application cache</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" onClick={() => {}}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Clear Cache
-                </Button>
-                <Button variant="outline" onClick={() => {}}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh Data
-                </Button>
-                <Button variant="outline" onClick={() => {}}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Cache
-                </Button>
-              </div>
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium mb-1">Cache Statistics</p>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div><p className="text-muted-foreground">Size</p><p className="font-mono">245 MB</p></div>
-                  <div><p className="text-muted-foreground">Entries</p><p className="font-mono">12,847</p></div>
-                  <div><p className="text-muted-foreground">Hit Rate</p><p className="font-mono">94.2%</p></div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Data Export</CardTitle>
+                <CardDescription>Export your data in various formats</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
+                    <Download className="h-6 w-6 mb-2" />
+                    <span className="font-medium">CSV Export</span>
+                    <p className="text-sm text-muted-foreground">Export as CSV file</p>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
+                    <FileText className="h-6 w-6 mb-2" />
+                    <span className="font-medium">JSON Export</span>
+                    <p className="text-sm text-muted-foreground">Export as JSON file</p>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
+                    <Download className="h-6 w-6 mb-2" />
+                    <span className="font-medium">Full Backup</span>
+                    <p className="text-sm text-muted-foreground">Complete data backup</p>
+                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Data Deletion</CardTitle>
+                <CardDescription>Permanently delete your account and all data</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 border border-destructive bg-destructive/10 rounded-lg">
+                  <p className="text-sm text-destructive">
+                    This action is irreversible. All your data, including portfolio, alerts, and research, will be
+                    permanently deleted.
+                  </p>
+                </div>
+                <Button variant="destructive" onClick={() => {}}>
+                  Delete Account
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === "advanced" && (
+          <div className="space-y-6" role="tabpanel" aria-label="Advanced settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">API Keys</CardTitle>
+                <CardDescription>Manage your API access keys</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div>
+                    <p className="font-medium">Default API Key</p>
+                    <p className="text-sm text-muted-foreground font-mono">ihsg_quant_sk_live_****1234</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm">
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Generate New Key
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Webhooks</CardTitle>
+                <CardDescription>Configure webhook endpoints for real-time events</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">No webhooks configured</p>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Webhook
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Cache Management</CardTitle>
+                <CardDescription>Manage application cache</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button variant="outline" onClick={() => {}}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Clear Cache
+                  </Button>
+                  <Button variant="outline" onClick={() => {}}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh Data
+                  </Button>
+                  <Button variant="outline" onClick={() => {}}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Cache
+                  </Button>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium mb-1">Cache Statistics</p>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Size</p>
+                      <p className="font-mono">245 MB</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Entries</p>
+                      <p className="font-mono">12,847</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Hit Rate</p>
+                      <p className="font-mono">94.2%</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

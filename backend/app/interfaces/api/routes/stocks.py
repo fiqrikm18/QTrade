@@ -1,5 +1,7 @@
 """Stocks API routes."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Path
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -119,8 +121,8 @@ async def stock_analysis(
 @router.get("/{ticker}/technical")
 async def stock_technical(
     ticker: str = Path(..., description="Stock ticker"),
-    session=Depends(get_session),
-):
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     """Get latest technical indicators for a stock."""
     # Return mock data for now
     return {

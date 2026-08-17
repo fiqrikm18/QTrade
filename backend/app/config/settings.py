@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     postgres_dsn: str = "postgresql+asyncpg://ihsg:ihsg@localhost:5432/ihsg_quant"
     redis_url: str = "redis://localhost:6379/0"
     data_dir: str = "./data"
+    models_dir: str = "./models"
     market_data_provider: str = "yfinance"
     ingest_cron: str = "15 16 * * 1-5"
     watchdog_cron: str = "*/30 * * * *"

@@ -208,3 +208,102 @@ class StockScore(AuditMixin, Base):
     invalidation_conditions: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'")
     )
+
+
+class MLModel(AuditMixin, Base):
+    """Registered ML artifacts (docs/data-model.md §10, docs/ml.md §7-8).
+
+    Keyed on ``(model_name, model_version)``; ``status`` is the lifecycle flag
+    (staging|production|archived). Append-only registry: promote by inserting a
+    new row + flipping status, never mutate a production artifact in place.
+    """
+
+    __tablename__ = "ml_models"
+    __table_args__ = (
+        UniqueConstraint(
+            "model_name", "model_version", name="uq_ml_models_name_version"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    model_name: Mapped[str] = mapped_column(Text, nullable=False)
+    model_version: Mapped[str] = mapped_column(Text, nullable=False)
+    target: Mapped[str] = mapped_column(Text, nullable=False)
+    horizon: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    feature_version: Mapped[str] = mapped_column(Text, nullable=False)
+    features_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    training_start: Mapped[date | None] = mapped_column(Date)
+    training_end: Mapped[date | None] = mapped_column(Date)
+    metrics: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+    artifact_path: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'staging'")
+    )
+
+
+class MLPrediction(AuditMixin, Base):
+    """Append-only per-ticker predictions (docs/data-model.md §10, docs/ml.md §6).
+
+    Unique on ``(ticker, asof_date, model_name, model_version)``; inserts use
+    ON CONFLICT DO NOTHING so re-runs never overwrite history.
+    """
+
+    __tablename__ = "ml_predictions"
+    __table_args__ = (
+        UniqueConstraint(
+            "ticker",
+            "asof_date",
+            "model_name",
+            "model_version",
+            name="uq_ml_predictions_ticker_asof_model_version",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    ticker: Mapped[str] = mapped_column(Text, nullable=False)
+    asof_date: Mapped[date] = mapped_column(Date, nullable=False)
+    model_name: Mapped[str] = mapped_column(Text, nullable=False)
+    model_version: Mapped[str] = mapped_column(Text, nullable=False)
+    feature_version: Mapped[str] = mapped_column(Text, nullable=False)
+    probability: Mapped[Decimal | None] = mapped_column(Numeric)
+    expected_return: Mapped[Decimal | None] = mapped_column(Numeric)
+    confidence: Mapped[Decimal | None] = mapped_column(Numeric)
+    prediction_class: Mapped[str | None] = mapped_column(Text)
+
+
+class Backtest(AuditMixin, Base):
+    """Persisted backtest run config + metrics + bias audit (docs/backtesting.md §8)."""
+
+    __tablename__ = "backtests"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    strategy: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+    universe: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+    start: Mapped[date] = mapped_column(Date, nullable=False)
+    end: Mapped[date] = mapped_column(Date, nullable=False)
+    feature_version: Mapped[str | None] = mapped_column(Text)
+    scoring_version: Mapped[str | None] = mapped_column(Text)
+    model_version: Mapped[str | None] = mapped_column(Text)
+    metrics: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+    bias_audit: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+
+
+class BacktestTrade(AuditMixin, Base):
+    """Per-trade output of a backtest run (docs/backtesting.md §8)."""
+
+    __tablename__ = "backtest_trades"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    backtest_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("backtests.id", ondelete="CASCADE"), nullable=False
+    )
+    ticker: Mapped[str] = mapped_column(Text, nullable=False)
+    entry_date: Mapped[date] = mapped_column(Date, nullable=False)
+    exit_date: Mapped[date] = mapped_column(Date, nullable=False)
+    entry_price: Mapped[Decimal | None] = mapped_column(Numeric)
+    exit_price: Mapped[Decimal | None] = mapped_column(Numeric)
+    shares: Mapped[Decimal | None] = mapped_column(Numeric)
+    pnl: Mapped[Decimal | None] = mapped_column(Numeric)
+    fees: Mapped[Decimal | None] = mapped_column(Numeric)
+    slippage: Mapped[Decimal | None] = mapped_column(Numeric)
+    exit_reason: Mapped[str | None] = mapped_column(Text)

@@ -52,6 +52,8 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
 # callable partially-unknown). Silence B009 for those files only.
 "app/domain/ml/metrics.py" = ["B009"]
 "app/application/services/ml_trainer.py" = ["B009"]
+# ML repo has module docstring before imports (standard layout); silence E402/I001.
+"app/infrastructure/repositories/ml_repo.py" = ["B009", "E402", "I001"]
 
 [tool.pyright]
 typeCheckingMode = "strict"

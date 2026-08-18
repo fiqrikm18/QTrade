@@ -128,6 +128,7 @@ Domains (each is a folder under `domain/`):
 | `news` | News ingestion, sentiment | `news_sentiment_score` |
 | `scoring` | Opportunity score, profiles, ranking | `opportunity_score` |
 | `ml` | Models, features, predictions, registry | `ml_score`, probabilities |
+| `llm` | Provider abstraction, adapters, explanations, NL screener, research, cache | `complete`, `complete_json`, explanations, FilterTree |
 | `risk` | Volatility, beta, VaR, drawdown | `risk_score` |
 | `portfolio` | Portfolio analytics | portfolio metrics |
 | `backtest` | Strategy evaluation | metrics, trades |
@@ -319,6 +320,6 @@ DESIGN §69 (see Roadmap below).
 | P1 | universe, OHLCV ingestion, PG+DuckDB+Polars, technical engine, basic fundamentals, breadth, sector, scoring, full scanner, FastAPI; UI: app shell, dashboard, market overview, screener, stock analysis, basic sector page, chart system, watchlist, data freshness, score visualization (DESIGN §69-P1) | full-universe daily scan on 2-4 CPU finishes in reasonable time; scores reproducible; terminal shell stable |
 | P2 | smart money, factor model, macro engine, economic calendar, news ingestion, alerts; UI: smart money, factors, macro, calendar, news, alerts, compare (DESIGN §69-P2) | dashboards answer market + macro questions |
 | P3 | ML, walk-forward validation, backtesting, model/feature versioning, feature importance; UI: ML, backtest, risk, portfolio, model transparency (DESIGN §69-P3) | strategy backtests honest (no leakage); ML evaluated by Sharpe not accuracy | **Status: implemented — ML engine (dataset, walk-forward, calibration, registry, ml_score) + backtest engine (costs, sizing, stops, metrics, bias audit) with tests.**
-| P4 | LLM, NL screener, research assistant, reports; UI: LLM research assistant, AI explanations (DESIGN §69-P4) | LLM off-critical-path, feature-flagged, falls back cleanly |
+| P4 | LLM, NL screener, research assistant, reports; UI: LLM research assistant, AI explanations (DESIGN §69-P4) | LLM off-critical-path, feature-flagged, falls back cleanly | **Status: implemented — provider abstraction (OpenAI/Anthropic/Google/OpenRouter/Ollama), feature flags, explanation/summary/NL-screener/report services, Redis cache, error handling with graceful fallback, API routes.**
 
 Each phase: tests + validation + docs before the next. Never start with the UI.

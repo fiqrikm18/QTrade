@@ -67,7 +67,6 @@ class TechnicalIndicators(BaseModel):
     sma_50: float | None = None
     sma_200: float | None = None
     ema_20: float | None = None
-    atr_14: float | None = None
     adx_14: float | None = None
     bollinger_upper: float | None = None
     bollinger_mid: float | None = None

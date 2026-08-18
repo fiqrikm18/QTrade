@@ -49,12 +49,14 @@ def _signals(n: int = 60) -> pl.DataFrame:
 def test_fill_uses_next_open_not_signal_close():
     """Anti-look-ahead: signal at close of d, fill at open of d+1."""
     prices = _prices(5, ["A"])
-    signals = pl.DataFrame(
-        {"ticker": ["A"], "asof_date": [_START], "score": [90.0]}
-    )
+    signals = pl.DataFrame({"ticker": ["A"], "asof_date": [_START], "score": [90.0]})
     trades, _ = run_backtest(
-        signals, prices, _START, _START + timedelta(days=4),
-        CostParams(), SizingParams(top_n=1),
+        signals,
+        prices,
+        _START,
+        _START + timedelta(days=4),
+        CostParams(),
+        SizingParams(top_n=1),
     )
     assert len(trades) == 1
     entry_bar = prices.filter(pl.col("trade_date") == _START + timedelta(days=1))
@@ -65,8 +67,12 @@ def test_costs_always_applied():
     prices = _prices(30, ["A"])
     signals = _signals(30).filter(pl.col("ticker") == "A")
     trades, _ = run_backtest(
-        signals, prices, _START, _START + timedelta(days=29),
-        CostParams(), SizingParams(top_n=1),
+        signals,
+        prices,
+        _START,
+        _START + timedelta(days=29),
+        CostParams(),
+        SizingParams(top_n=1),
     )
     assert len(trades) > 0
     assert all(t.fees > 0 for t in trades)
@@ -78,8 +84,12 @@ def test_min_lot_rounding_and_liquidity_cap():
     prices = _prices(30, ["A"])
     signals = _signals(30).filter(pl.col("ticker") == "A")
     trades, _ = run_backtest(
-        signals, prices, _START, _START + timedelta(days=29),
-        CostParams(), SizingParams(top_n=1, max_weight=1.0),
+        signals,
+        prices,
+        _START,
+        _START + timedelta(days=29),
+        CostParams(),
+        SizingParams(top_n=1, max_weight=1.0),
     )
     for t in trades:
         assert t.shares % 100 == 0
@@ -91,8 +101,12 @@ def test_no_future_data_adjacency():
     prices = _prices(60)
     signals = _signals(60)
     trades, equity = run_backtest(
-        signals, prices, _START, _START + timedelta(days=59),
-        CostParams(), SizingParams(top_n=2),
+        signals,
+        prices,
+        _START,
+        _START + timedelta(days=59),
+        CostParams(),
+        SizingParams(top_n=2),
     )
     last_price_date = prices["trade_date"].max()
     assert last_price_date == _START + timedelta(days=59)

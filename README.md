@@ -117,7 +117,9 @@ See `docs/deployment.md` for full details.
   calibration, registry, ml_score) + backtest engine (costs, sizing, stops,
   metrics, bias audit) with tests.*
 - **Phase 4** — LLM, natural-language screener, research assistant, reports;
-  UI: AI research assistant, AI explanations.
+  UI: AI research assistant, AI explanations. *Status: implemented — ML engine (dataset, walk-forward,
+  calibration, registry, ml_score) + backtest engine (costs, sizing, stops,
+  metrics, bias audit) with tests.*
 
 Details in `docs/architecture.md` (§ Roadmap).
 

@@ -11,9 +11,12 @@ def test_feature_flags_exist():
     # Use fresh Settings instance to avoid lru_cache issues
     s = Settings()
     required = [
-        "llm_analysis_enabled", "llm_news_summary_enabled",
-        "llm_stock_explanation_enabled", "llm_macro_summary_enabled",
-        "llm_nl_screener_enabled", "llm_research_enabled",
+        "llm_analysis_enabled",
+        "llm_news_summary_enabled",
+        "llm_stock_explanation_enabled",
+        "llm_macro_summary_enabled",
+        "llm_nl_screener_enabled",
+        "llm_research_enabled",
     ]
     for flag in required:
         assert hasattr(s, flag), f"missing {flag}"

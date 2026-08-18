@@ -1,7 +1,6 @@
 """LLM API routes."""
 
 
-
 async def test_llm_explain_endpoint_returns_200(client):
     """POST /api/v1/llm/explain returns explanation or fallback."""
     # LLM may be disabled; endpoint should still respond

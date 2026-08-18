@@ -73,3 +73,13 @@ CP3 checkpoint: PASSED
   - persistence + bias_audit; ML backtest via stored predictions
   - API: GET /ml/models, GET /ml/models/{n}/{v}, POST /backtests/run, GET /backtests/{id}
   - pytest 126 passed; ruff clean; pyright 0
+
+=== CP4 checkpoint ===
+CP4 checkpoint: PASSED
+  - LLM Provider Protocol + 5 adapters (OpenAI/Anthropic/Google/OpenRouter/Ollama) via langchain
+  - LLMService: explain_stock_score, translate_nl_to_filter, summarize_news, generate_report
+  - Redis cache with stable keys (feature+context_hash+model) and 24h TTL
+  - Feature flags: llm_*_enabled for per-feature gating
+  - Error handling: timeout/auth/rate-limit/JSON errors → deterministic fallback strings
+  - API routes: GET /ml/models, GET /ml/models/{n}/{v}, POST /backtests/run, GET /backtests/{id}
+  - pytest 164 passed; ruff clean; pyright 0

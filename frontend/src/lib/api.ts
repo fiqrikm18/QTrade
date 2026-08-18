@@ -332,6 +332,19 @@ export interface ResearchMemo {
   };
 }
 
+export interface StockListItem {
+  ticker: string;
+  name: string | null;
+  board: string | null;
+}
+
+export interface StocksResult {
+  items: StockListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -361,6 +374,15 @@ export function getTechnicalIndicators(
 ): Promise<TechnicalIndicators> {
   return request<TechnicalIndicators>(
     `/api/v1/stocks/${encodeURIComponent(ticker)}/technical`,
+  );
+}
+
+export function getStocks(
+  page = 1,
+  pageSize = 20,
+): Promise<StocksResult> {
+  return request<StocksResult>(
+    `/api/v1/stocks?page=${page}&page_size=${pageSize}`,
   );
 }
 

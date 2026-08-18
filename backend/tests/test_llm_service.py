@@ -20,7 +20,7 @@ Conventions follow the Task 1 tests (sync `LLMProvider` Protocol):
 from __future__ import annotations
 
 from datetime import date
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from sqlalchemy import delete
 
@@ -58,6 +58,13 @@ def _seed_score(session) -> StockScore:
     return score
 
 
+def _mock_cache():
+    """Create a mock cache that returns None (cache miss)."""
+    mock_cache = AsyncMock()
+    mock_cache.get.return_value = None
+    return mock_cache
+
+
 async def test_explain_stock_score_returns_markdown(session):
     """explain_stock_score returns AI-ENRICHED markdown citing stored numbers."""
     await session.execute(delete(StockScore))
@@ -66,10 +73,14 @@ async def test_explain_stock_score_returns_markdown(session):
 
     mock_provider = MagicMock()
     mock_provider.complete.return_value = "## BBCA Analysis\nBBCA scores 86/100..."
+    mock_cache = _mock_cache()
 
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled
@@ -100,10 +111,14 @@ async def test_explain_stock_score_provider_failure_falls_back(session):
 
     mock_provider = MagicMock()
     mock_provider.complete.side_effect = RuntimeError("upstream 5xx")
+    mock_cache = _mock_cache()
 
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled
@@ -126,9 +141,13 @@ async def test_explain_stock_score_no_score_data(session):
     await session.flush()
 
     mock_provider = MagicMock()
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    mock_cache = _mock_cache()
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled
@@ -157,10 +176,14 @@ async def test_translate_nl_to_filter_returns_filter_tree():
             ]
         }
     )
+    mock_cache = _mock_cache()
 
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled
@@ -187,10 +210,14 @@ async def test_translate_nl_to_filter_provider_failure_falls_back():
     """Provider failure yields a permissive fallback filter (no blank page)."""
     mock_provider = MagicMock()
     mock_provider.complete_json.side_effect = RuntimeError("upstream 5xx")
+    mock_cache = _mock_cache()
 
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled
@@ -209,10 +236,14 @@ async def test_summarize_news_returns_summary():
     """summarize_news returns AI-ENRICHED text for the given ticker."""
     mock_provider = MagicMock()
     mock_provider.complete.return_value = "BBCA news digest: net positive flows."
+    mock_cache = _mock_cache()
 
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled
@@ -238,10 +269,14 @@ async def test_generate_report_returns_markdown():
     mock_provider.complete.return_value = (
         "## Multi-stock report\n- BBCA: 86\n- BBRI: 72"
     )
+    mock_cache = _mock_cache()
 
-    with patch(
-        "app.application.services.llm_service.get_provider",
-        return_value=mock_provider,
+    with (
+        patch(
+            "app.application.services.llm_service.get_provider",
+            return_value=mock_provider,
+        ),
+        patch("app.application.services.llm_service.LLMCache", return_value=mock_cache),
     ):
         s = get_settings()
         prev = s.llm_enabled

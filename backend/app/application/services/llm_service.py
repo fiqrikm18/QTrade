@@ -46,9 +46,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import get_settings
 from app.domain.llm.exceptions import LLMUnavailable
 from app.domain.llm.providers import LLMProvider, get_provider
+from app.infrastructure.cache.llm_cache import LLMCache, make_cache_key
 from app.infrastructure.database.models import StockScore
 
-__all__ = ["FilterTree", "LLMService"]
+__all__ = ["FilterTree", "LLMService", "make_cache_key"]
 
 
 class FilterTree(BaseModel):
@@ -119,11 +120,14 @@ class LLMService:
 
     def __init__(self) -> None:
         self._provider: LLMProvider | None = None
-        if get_settings().llm_enabled:
+        self._cache: LLMCache | None = None
+        settings = get_settings()
+        if settings.llm_enabled:
             try:
                 self._provider = get_provider()
             except LLMUnavailable:
                 self._provider = None
+            self._cache = LLMCache()
 
     # ------------------------------------------------------------------
     # Public surface
@@ -143,7 +147,7 @@ class LLMService:
         model cites real numbers (docs/llm.md §5). Falls back to deterministic
         text when the provider is absent or raises (docs/llm.md §1.5, §9).
         """
-        if (flag_fallback := _check_feature_flag("llm_stock_explanation_enabled")):
+        if flag_fallback := _check_feature_flag("llm_stock_explanation_enabled"):
             return flag_fallback
         if self._provider is None:
             return _FALLBACK_DISABLED
@@ -153,6 +157,14 @@ class LLMService:
             return _AI_PREFIX + f"No score data for {ticker} at {asof}."
 
         context = self._build_score_context(score)
+        cache_context = {"ticker": ticker, "asof": asof.isoformat()}
+        cache_key = make_cache_key("explain", cache_context, get_settings().llm_model)
+
+        if self._cache:
+            cached = await self._cache.get(cache_key)
+            if cached:
+                return _AI_PREFIX + cached
+
         prompt = _EXPLAIN_PROMPT.format(
             context=context,
             ticker=score.ticker,
@@ -161,6 +173,8 @@ class LLMService:
         )
         try:
             text = self._provider.complete(prompt, temperature=0.1)
+            if self._cache:
+                await self._cache.set(cache_key, text)
         except Exception:
             return _FALLBACK_EXPLAIN
         return _AI_PREFIX + text
@@ -176,11 +190,24 @@ class LLMService:
             return _FALLBACK_NL_TREE.model_copy(deep=True)
         if self._provider is None:
             return _FALLBACK_NL_TREE.model_copy(deep=True)
+
+        cache_context = {"query": query}
+        cache_key = make_cache_key("translate", cache_context, get_settings().llm_model)
+
+        if self._cache:
+            cached = await self._cache.get(cache_key)
+            if cached:
+                return FilterTree.model_validate_json(cached)
+
         try:
             result = self._provider.complete_json(query, schema=FilterTree)
             if isinstance(result, FilterTree):
-                return result
-            return FilterTree.model_validate(result)
+                result_tree = result
+            else:
+                result_tree = FilterTree.model_validate(result)
+            if self._cache:
+                await self._cache.set(cache_key, result_tree.model_dump_json())
+            return result_tree
         except Exception:
             return _FALLBACK_NL_TREE.model_copy(deep=True)
 
@@ -188,7 +215,7 @@ class LLMService:
         self, ticker: str, asof: date, news_items: list[str]
     ) -> str:
         """Summarise ``news_items`` for ``ticker`` into ``AI ENRICHED`` text."""
-        if (flag_fallback := _check_feature_flag("llm_news_summary_enabled")):
+        if flag_fallback := _check_feature_flag("llm_news_summary_enabled"):
             return flag_fallback
         if self._provider is None:
             return _FALLBACK_DISABLED
@@ -199,9 +226,23 @@ class LLMService:
             {"ticker": ticker, "asof_date": asof.isoformat(), "news_items": news_items},
             ensure_ascii=False,
         )
+        cache_context = {
+            "ticker": ticker,
+            "asof": asof.isoformat(),
+            "news_hash": hash(payload),
+        }
+        cache_key = make_cache_key("summarize", cache_context, get_settings().llm_model)
+
+        if self._cache:
+            cached = await self._cache.get(cache_key)
+            if cached:
+                return _AI_PREFIX + cached
+
         prompt = _NEWS_PROMPT.format(payload=payload)
         try:
             text = self._provider.complete(prompt, temperature=0.2)
+            if self._cache:
+                await self._cache.set(cache_key, text)
         except Exception:
             return _FALLBACK_SUMMARY
         return _AI_PREFIX + text
@@ -221,7 +262,7 @@ class LLMService:
         list — the model still produces narrative; the caller can rerun with a
         session for a grounded version.
         """
-        if (flag_fallback := _check_feature_flag("llm_research_enabled")):
+        if flag_fallback := _check_feature_flag("llm_research_enabled"):
             return flag_fallback
         if self._provider is None:
             return _FALLBACK_DISABLED
@@ -238,11 +279,25 @@ class LLMService:
             contexts = [f"ticker: {t}" for t in tickers]
 
         joined = "\n---\n".join(contexts)
+        cache_context = {
+            "tickers": sorted(tickers),
+            "asof": asof.isoformat(),
+            "template": template,
+        }
+        cache_key = make_cache_key("report", cache_context, get_settings().llm_model)
+
+        if self._cache:
+            cached = await self._cache.get(cache_key)
+            if cached:
+                return _AI_PREFIX + cached
+
         prompt = _REPORT_PROMPT.format(
             template=template, asof=asof.isoformat(), contexts=joined
         )
         try:
             text = self._provider.complete(prompt, temperature=0.2)
+            if self._cache:
+                await self._cache.set(cache_key, text)
         except Exception:
             return _FALLBACK_REPORT
         return _AI_PREFIX + text

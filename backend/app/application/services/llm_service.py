@@ -61,6 +61,13 @@ class FilterTree(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    # Recursive tree fields with JSON aliases.
+    # pyright cannot resolve the generic parameter of list[FilterTree] inside
+    # Field(default_factory=list) at class definition time because the class
+    # is not yet fully defined. This is a genuine pyright limitation with
+    # pydantic recursive models + Field(default_factory=...); the targeted
+    # suppression below is the smallest correct fix (AGENTS.md §3.2 exception
+    # for genuine external limitations with no reasonable alternative).
     and_: list[FilterTree] = Field(default_factory=list, alias="and")  # pyright: ignore[reportUnknownVariableType]
     or_: list[FilterTree] = Field(default_factory=list, alias="or")  # pyright: ignore[reportUnknownVariableType]
     field: str | None = None

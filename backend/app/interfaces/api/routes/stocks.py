@@ -234,24 +234,30 @@ async def stock_compare(
 
         comps = score.score_components or {}
 
-        results.append({
-            "ticker": score.ticker,
-            "company": stock.name,
-            "sector": str(stock.sector_id) if stock.sector_id else "UNKNOWN",
-            "price": price,
-            "change": change,
-            "volume": int(price_row[2]) if price_row and price_row[2] is not None else 0,
-            "turnover": (
-                float(price_row[3]) if price_row and price_row[3] is not None else 0.0
-            ),
-            "marketCap": price * shares,
-            "technical": comps.get("technical", 0),
-            "fundamental": comps.get("fundamental", 0),
-            "momentum": comps.get("momentum", 0),
-            "smartMoney": comps.get("smart_money", 0),
-            "sectorScore": score.sector_score or 0,
-            "risk": comps.get("risk", 0),
-            "ml": comps.get("ml", 0),
-            "opportunity": score.opportunity_score or 0,
-        })
+        results.append(
+            {
+                "ticker": score.ticker,
+                "company": stock.name,
+                "sector": str(stock.sector_id) if stock.sector_id else "UNKNOWN",
+                "price": price,
+                "change": change,
+                "volume": int(price_row[2])
+                if price_row and price_row[2] is not None
+                else 0,
+                "turnover": (
+                    float(price_row[3])
+                    if price_row and price_row[3] is not None
+                    else 0.0
+                ),
+                "marketCap": price * shares,
+                "technical": comps.get("technical", 0),
+                "fundamental": comps.get("fundamental", 0),
+                "momentum": comps.get("momentum", 0),
+                "smartMoney": comps.get("smart_money", 0),
+                "sectorScore": score.sector_score or 0,
+                "risk": comps.get("risk", 0),
+                "ml": comps.get("ml", 0),
+                "opportunity": score.opportunity_score or 0,
+            }
+        )
     return results

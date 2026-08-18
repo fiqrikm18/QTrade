@@ -6,7 +6,20 @@ router = APIRouter(prefix="/api/v1")
 
 
 def register_routes(app: FastAPI) -> None:
-    from app.interfaces.api.routes import backtests, llm, market, ml, screener, stocks
+    from app.interfaces.api.routes import (
+        alerts,
+        backtests,
+        calendar,
+        llm,
+        macro,
+        market,
+        ml,
+        news,
+        portfolio,
+        research,
+        screener,
+        stocks,
+    )
 
     router.include_router(market.router, prefix="/market", tags=["market"])
     router.include_router(stocks.router, prefix="/stocks", tags=["stocks"])
@@ -14,5 +27,11 @@ def register_routes(app: FastAPI) -> None:
     router.include_router(backtests.router, prefix="/backtests", tags=["backtests"])
     router.include_router(ml.router, prefix="/ml", tags=["ml"])
     router.include_router(llm.router, prefix="/llm", tags=["llm"])
+    router.include_router(macro.router, prefix="/macro", tags=["macro"])
+    router.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
+    router.include_router(news.router, prefix="/news", tags=["news"])
+    router.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])
+    router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
+    router.include_router(research.router, prefix="/research", tags=["research"])
 
     app.include_router(router)

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -14,6 +15,7 @@ import {
   ExternalLink,
   RefreshCw,
   Activity,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getSectorPerformance, type SectorPerformance } from "@/lib/api";
 
 interface SectorRow {
   sector: string;
@@ -52,147 +55,98 @@ interface SectorRow {
   stage: string;
 }
 
-const sectorData: SectorRow[] = [
-  {
-    sector: "BANKING",
-    perf1d: 2.1,
-    perf5d: 4.2,
-    perf20d: 7.8,
-    perf60d: 12.4,
-    rs: 91,
-    score: 89,
-    rotation: "LEADING",
-    momentum: 88,
-    breadth: 72,
-    volume: 1.2,
-    valuation: 78,
-    topMover: "BBCA",
-    breadthPct: 72,
-    stage: "Accumulation",
-  },
-  {
-    sector: "ENERGY",
-    perf1d: 1.7,
-    perf5d: 5.8,
-    perf20d: 3.1,
-    perf60d: 8.2,
-    rs: 84,
-    score: 82,
-    rotation: "IMPROVING",
-    momentum: 79,
-    breadth: 68,
-    volume: 0.9,
-    valuation: 85,
-    topMover: "PGAS",
-    breadthPct: 68,
-    stage: "Markup",
-  },
-  {
-    sector: "TELCO",
-    perf1d: -0.3,
-    perf5d: 1.1,
-    perf20d: 2.4,
-    perf60d: 1.0,
-    rs: 63,
-    score: 65,
-    rotation: "WEAKENING",
-    momentum: 65,
-    breadth: 58,
-    volume: 0.7,
-    valuation: 72,
-    topMover: "TLKM",
-    breadthPct: 58,
-    stage: "Distribution",
-  },
-  {
-    sector: "PROPERTY",
-    perf1d: -1.2,
-    perf5d: -2.4,
-    perf20d: -4.8,
-    perf60d: -6.1,
-    rs: 42,
-    score: 44,
-    rotation: "LAGGING",
-    momentum: 45,
-    breadth: 38,
-    volume: 0.5,
-    valuation: 58,
-    topMover: "SMRA",
-    breadthPct: 38,
-    stage: "Markdown",
-  },
-  {
-    sector: "CONSUMER",
-    perf1d: 0.8,
-    perf5d: 2.1,
-    perf20d: 1.8,
-    perf60d: 3.5,
-    rs: 71,
-    score: 68,
-    rotation: "IMPROVING",
-    momentum: 72,
-    breadth: 62,
-    volume: 0.8,
-    valuation: 75,
-    topMover: "UNVR",
-    breadthPct: 62,
-    stage: "Markup",
-  },
-  {
-    sector: "HEALTHCARE",
-    perf1d: 0.5,
-    perf5d: -0.2,
-    perf20d: -1.2,
-    perf60d: -0.5,
-    rs: 58,
-    score: 61,
-    rotation: "WEAKENING",
-    momentum: 55,
-    breadth: 52,
-    volume: 0.6,
-    valuation: 70,
-    topMover: "KLBF",
-    breadthPct: 52,
-    stage: "Distribution",
-  },
-  {
-    sector: "INFRASTRUCTURE",
-    perf1d: 1.1,
-    perf5d: 2.8,
-    perf20d: 3.5,
-    perf60d: 5.1,
-    rs: 76,
-    score: 73,
-    rotation: "IMPROVING",
-    momentum: 78,
-    breadth: 66,
-    volume: 0.9,
-    valuation: 80,
-    topMover: "WIJK",
-    breadthPct: 66,
-    stage: "Markup",
-  },
-];
-
-const rotationVariant: Record<
-  SectorRow["rotation"],
-  "success" | "default" | "warning" | "destructive"
-> = {
-  LEADING: "success",
-  IMPROVING: "default",
-  WEAKENING: "warning",
-  LAGGING: "destructive",
-};
-
 function perfClass(v: number): string {
-  return v >= 0 ? "text-green-600" : "text-red-600";
+  if (v > 0) return "text-green-600";
+  if (v < 0) return "text-red-600";
+  return "text-muted-foreground";
 }
 
 function perfLabel(v: number): string {
-  return `${v > 0 ? "+" : ""}${v}%`;
+  if (v > 0) return `+${v.toFixed(2)}%`;
+  if (v < 0) return `${v.toFixed(2)}%`;
+  return "--";
 }
 
 export default function SectorsPage() {
+  const [sectorData, setSectorData] = useState<SectorRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getSectorPerformance();
+        // Map API response to SectorRow format
+        const mappedData: SectorRow[] = data.map((item) => ({
+          sector: item.ticker,
+          perf1d: 0,
+          perf5d: 0,
+          perf20d: 0,
+          perf60d: 0,
+          rs: 0,
+          score: item.sector_score,
+          rotation:
+            item.sector_score >= 80
+              ? "LEADING"
+              : item.sector_score >= 60
+                ? "IMPROVING"
+                : item.sector_score >= 40
+                  ? "WEAKENING"
+                  : "LAGGING",
+          momentum: item.sector_score,
+          breadth: 0,
+          volume: 0,
+          valuation: 0,
+          topMover: item.ticker,
+          breadthPct: 0,
+          stage: "Unknown",
+        }));
+        setSectorData(mappedData);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load sector data",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <AlertTriangle className="h-12 w-12 text-red-600" />
+          <div className="ml-4">
+            <h2 className="text-xl font-bold">Failed to load sector data</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const rotationVariant: Record<
+    SectorRow["rotation"],
+    "success" | "default" | "warning" | "destructive"
+  > = {
+    LEADING: "success",
+    IMPROVING: "default",
+    WEAKENING: "warning",
+    LAGGING: "destructive",
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -415,9 +369,7 @@ export default function SectorsPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">1D</p>
-                    <p
-                      className={`font-bold ${perfClass(sector.perf1d)}`}
-                    >
+                    <p className={`font-bold ${perfClass(sector.perf1d)}`}>
                       {perfLabel(sector.perf1d)}
                     </p>
                   </div>
@@ -447,9 +399,7 @@ export default function SectorsPage() {
                   </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    Breadth
-                  </span>
+                  <span className="text-xs text-muted-foreground">Breadth</span>
                   <Badge
                     variant={
                       sector.breadthPct >= 60

@@ -1,182 +1,68 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Download, Settings, Eye, Copy, Bookmark } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Download, Settings, Eye, Copy, Bookmark, Loader2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getNews, type NewsItem } from "@/lib/api"
 
-interface NewsItem {
-  id: number
-  date: string
-  time: string
-  title: string
-  source: string
-  category: string
-  impact: "HIGH" | "MEDIUM" | "LOW"
-  sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL"
-  tickers: string[]
-  summary: string
-}
-
-const newsData: NewsItem[] = [
-  {
-    id: 1,
-    date: "2024-01-15",
-    time: "09:00",
-    title: "BBCA Q4 2023 Net Profit Rises 15% YoY",
-    source: "Bisnis Indonesia",
-    category: "Earnings",
-    impact: "HIGH",
-    sentiment: "POSITIVE",
-    tickers: ["BBCA"],
-    summary: "Bank Central Asia reported Q4 2023 net profit of IDR 8.2 trillion, up 15% YoY driven by strong loan growth and lower provisions. NIM expanded to 5.2% from 4.9% YoY.",
-  },
-  {
-    id: 2,
-    date: "2024-01-15",
-    time: "09:30",
-    title: "BMRI: Q4 Net Profit Beats Estimates",
-    source: "Kontan",
-    category: "Earnings",
-    impact: "HIGH",
-    sentiment: "POSITIVE",
-    tickers: ["BMRI"],
-    summary: "Bank Mandiri reported Q4 net profit of IDR 12.5T, beating consensus of IDR 11.8T. NIM improved to 5.1% from 4.8% QoQ.",
-  },
-  {
-    id: 3,
-    date: "2024-01-15",
-    time: "19:30",
-    title: "US CPI Comes in at 3.1% YoY",
-    source: "Reuters",
-    category: "Macro",
-    impact: "HIGH",
-    sentiment: "NEUTRAL",
-    tickers: ["US"],
-    summary: "US CPI came in at 3.1% YoY vs 2.9% consensus. Core CPI at 3.9% vs 3.7% expected. Dollar strengthens on sticky inflation.",
-  },
-  {
-    id: 4,
-    date: "2024-01-15",
-    time: "19:30",
-    title: "Fed Holds Rates at 5.25-5.50%",
-    source: "Bloomberg",
-    category: "Monetary Policy",
-    impact: "HIGH",
-    sentiment: "NEUTRAL",
-    tickers: ["US"],
-    summary: "FOMC maintains federal funds rate at 5.25-5.50%. Powell indicates rate cuts unlikely before March. Dot plot shows three cuts in 2024.",
-  },
-  {
-    id: 5,
-    date: "2024-01-16",
-    time: "08:30",
-    title: "ID Trade Surplus Widens to $3.2B",
-    source: "BPS",
-    category: "Trade",
-    impact: "MEDIUM",
-    sentiment: "POSITIVE",
-    tickers: ["IDX"],
-    summary: "Indonesia trade surplus widened to $3.2B in Dec from $2.8B prior. Exports rose 8.5% YoY while imports grew 5.2%.",
-  },
-  {
-    id: 6,
-    date: "2024-01-15",
-    time: "10:00",
-    title: "TLKM Q4 Revenue Beats on Data Growth",
-    source: "Kontan",
-    category: "Earnings",
-    impact: "MEDIUM",
-    sentiment: "POSITIVE",
-    tickers: ["TLKM"],
-    summary: "Telkom Indonesia Q4 revenue grew 5.2% YoY to IDR 38.2T driven by mobile data revenue growth of 12.3%. EBITDA margin expanded to 52.1%.",
-  },
-  {
-    id: 7,
-    date: "2024-01-15",
-    time: "14:00",
-    title: "ASII Declares Dividend of IDR 150/share",
-    source: "CNBC Indonesia",
-    category: "Corporate Action",
-    impact: "MEDIUM",
-    sentiment: "POSITIVE",
-    tickers: ["ASII"],
-    summary: "Astra International declares cash dividend of IDR 150/share, payable March 15. Payout ratio at 45%. Ex-date Feb 20.",
-  },
-  {
-    id: 8,
-    date: "2024-01-15",
-    time: "11:00",
-    title: "BI Maintains BI Rate at 5.75%",
-    source: "Bank Indonesia",
-    category: "Monetary Policy",
-    impact: "HIGH",
-    sentiment: "NEUTRAL",
-    tickers: ["IDX"],
-    summary: "BI keeps policy rate at 5.75% for 5th straight meeting. Governor signals data-dependent approach. Rupiah stable at 15,650.",
-  },
-  {
-    id: 9,
-    date: "2024-01-14",
-    time: "08:30",
-    title: "BBRI Q4 Net Income Beats Estimates",
-    source: "Investor Daily",
-    category: "Earnings",
-    impact: "HIGH",
-    sentiment: "POSITIVE",
-    tickers: ["BBRI"],
-    summary: "Bank Rakyat Indonesia Q4 net profit of IDR 11.2T beats consensus of IDR 10.5T. Asset quality improves with NPL at 2.8%.",
-  },
-  {
-    id: 10,
-    date: "2024-01-15",
-    time: "09:00",
-    title: "BBNI Q4 NPL Improves to 1.8%",
-    source: "Bisnis Indonesia",
-    category: "Earnings",
-    impact: "MEDIUM",
-    sentiment: "POSITIVE",
-    tickers: ["BBNI"],
-    summary: "Bank Negara Indonesia Q4 NPL ratio improves to 1.8% from 2.1% QoQ. Loan growth accelerates to 11% YoY driven by corporate segment.",
-  },
-]
-
-const categories = ["All", "Earnings", "Macro", "Monetary Policy", "Corporate Action", "Trade", "Regulation", "Commodities"]
-const sources = ["All", "Bisnis Indonesia", "Kontan", "Reuters", "Bloomberg", "BPS", "Bank Indonesia", "CNBC Indonesia", "Investor Daily"]
-
-const impactVariant = (impact: NewsItem["impact"]): "destructive" | "warning" | "secondary" => {
-  switch (impact) {
-    case "HIGH":
-      return "destructive"
-    case "MEDIUM":
-      return "warning"
-    case "LOW":
-      return "secondary"
-  }
-}
-
-const sentimentClass = (sentiment: NewsItem["sentiment"]): string => {
-  switch (sentiment) {
-    case "POSITIVE":
-      return "bg-green-100 text-green-800"
-    case "NEGATIVE":
-      return "bg-red-100 text-red-800"
-    case "NEUTRAL":
-      return "bg-gray-100 text-gray-800"
-  }
-}
+type LoadState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; data: NewsItem[] };
 
 export default function NewsPage() {
   const [filterCategory, setFilterCategory] = useState("All")
   const [filterSource, setFilterSource] = useState("All")
   const [filterImpact, setFilterImpact] = useState<"all" | NewsItem["impact"]>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [state, setState] = useState<LoadState>({ status: "loading" });
 
-  const filteredNews = newsData.filter((item) => {
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getNews();
+        setState({ status: "ready", data });
+      } catch (err) {
+        setState({
+          status: "error",
+          message: err instanceof Error ? err.message : "Failed to load news",
+        });
+      }
+    }
+    fetchData();
+  }, []);
+
+  const categories = ["All", "Earnings", "Macro", "Monetary Policy", "Corporate Action", "Trade", "Regulation", "Commodities"]
+  const sources = ["All", "Bisnis Indonesia", "Kontan", "Reuters", "Bloomberg", "BPS", "Bank Indonesia", "CNBC Indonesia", "Investor Daily"]
+
+  const impactVariant = (impact: NewsItem["impact"]): "destructive" | "warning" | "secondary" => {
+    switch (impact) {
+      case "HIGH":
+        return "destructive"
+      case "MEDIUM":
+        return "warning"
+      case "LOW":
+        return "secondary"
+    }
+  }
+
+  const sentimentClass = (sentiment: NewsItem["sentiment"]): string => {
+    switch (sentiment) {
+      case "POSITIVE":
+        return "bg-green-100 text-green-800"
+      case "NEGATIVE":
+        return "bg-red-100 text-red-800"
+      case "NEUTRAL":
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const filteredNews = state.status === "ready" ? state.data.filter((item) => {
     if (filterCategory !== "All" && item.category !== filterCategory) return false
     if (filterSource !== "All" && item.source !== filterSource) return false
     if (filterImpact !== "all" && item.impact !== filterImpact) return false
@@ -188,7 +74,30 @@ export default function NewsPage() {
       return false
     }
     return true
-  })
+  }) : [];
+
+  if (state.status === "loading") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-destructive">Failed to load news</p>
+            <p className="text-sm text-muted-foreground">{state.message}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

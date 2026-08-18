@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -22,6 +22,7 @@ import {
   Building2,
   Landmark,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,85 +35,82 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getMacroIndicators, getCalendarEvents, type MacroIndicator, type CalendarEvent } from "@/lib/api";
+
+type LoadState<T> =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; data: T };
 
 export default function MacroPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [macroState, setMacroState] = useState<LoadState<MacroIndicator[]>>({ status: "loading" });
+  const [calendarState, setCalendarState] = useState<LoadState<CalendarEvent[]>>({ status: "loading" });
 
-  const indonesiaMacro = [
-    { indicator: "BI Rate", current: 5.75, previous: 5.75, change: 0, unit: "%", trend: "neutral", source: "BI" },
-    { indicator: "Inflation (CPI YoY)", current: 2.4, previous: 2.1, change: 0.3, unit: "%", trend: "up", source: "BPS" },
-    { indicator: "GDP (YoY)", current: 5.05, previous: 5.11, change: -0.06, unit: "%", trend: "down", source: "BPS" },
-    { indicator: "PMI Manufacturing", current: 52.1, previous: 51.8, change: 0.3, unit: "", trend: "up", source: "BPS" },
-    { indicator: "Trade Balance", current: 3.2, previous: 2.8, change: 0.4, unit: "B USD", trend: "up", source: "BPS" },
-    { indicator: "Current Account", current: -0.8, previous: -1.2, change: 0.4, unit: "% GDP", trend: "up", source: "BI" },
-    { indicator: "USD/IDR", current: 15650, previous: 15580, change: 70, unit: "", trend: "up", source: "BI" },
-    { indicator: "10Y IDN Bond", current: 6.65, previous: 6.58, change: 0.07, unit: "%", trend: "up", source: "BI" },
-  ];
+  useEffect(() => {
+    async function fetchMacro() {
+      try {
+        const data = await getMacroIndicators();
+        setMacroState({ status: "ready", data });
+      } catch (err) {
+        setMacroState({
+          status: "error",
+          message: err instanceof Error ? err.message : "Failed to load macro data",
+        });
+      }
+    }
+    fetchMacro();
+  }, []);
 
-  const globalMacro = [
-    { indicator: "Fed Funds Rate", current: 5.25, previous: 5.25, change: 0, unit: "%", trend: "neutral", source: "Fed" },
-    { indicator: "US CPI YoY", current: 3.1, previous: 3.2, change: -0.1, unit: "%", trend: "down", source: "BLS" },
-    { indicator: "US Nonfarm Payrolls", current: 275, previous: 216, change: 59, unit: "K", trend: "up", source: "BLS" },
-    { indicator: "US 10Y Yield", current: 4.12, previous: 4.08, change: 0.04, unit: "%", trend: "up", source: "US Treasury" },
-    { indicator: "DXY", current: 103.45, previous: 102.8, change: 0.65, unit: "", trend: "up", source: "ICE" },
-    { indicator: "S&P 500", current: 4850, previous: 4780, change: 70, unit: "", trend: "up", source: "S&P" },
-    { indicator: "China PMI", current: 50.8, previous: 50.5, change: 0.3, unit: "", trend: "up", source: "NBS" },
-    { indicator: "China GDP", current: 5.2, previous: 4.9, change: 0.3, unit: "%", trend: "up", source: "NBS" },
-  ];
+  useEffect(() => {
+    async function fetchCalendar() {
+      try {
+        const data = await getCalendarEvents();
+        setCalendarState({ status: "ready", data });
+      } catch (err) {
+        setCalendarState({
+          status: "error",
+          message: err instanceof Error ? err.message : "Failed to load calendar data",
+        });
+      }
+    }
+    fetchCalendar();
+  }, []);
 
-  const commodities = [
-    { name: "Oil (Brent)", price: 82.50, change: 1.20, unit: "USD/bbl", trend: "up" },
-    { name: "Gold", price: 2035, change: -5.50, unit: "USD/oz", trend: "down" },
-    { name: "Coal", price: 135, change: 2.5, unit: "USD/t", trend: "up" },
-    { name: "CPO", price: 3950, change: -25, unit: "MYR/t", trend: "down" },
-    { name: "Nickel", price: 16500, change: 150, unit: "USD/t", trend: "up" },
-    { name: "Copper", price: 8450, change: 45, unit: "USD/t", trend: "up" },
-  ];
+  const renderError = (message: string) => (
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-destructive">Failed to load data</p>
+        <p className="text-sm text-muted-foreground">{message}</p>
+      </CardContent>
+    </Card>
+  );
 
-  const macroEvents = [
-    { time: "09:00", country: "ID", event: "CPI YoY", impact: "HIGH", prev: "2.1%", consensus: "2.3%", actual: "2.4%" },
-    { time: "19:30", country: "US", event: "CPI YoY", impact: "HIGH", prev: "3.0%", consensus: "2.9%", actual: "--" },
-    { time: "21:00", country: "US", event: "Fed Decision", impact: "HIGH", prev: "5.25%", consensus: "5.25%", actual: "--" },
-    { time: "20:30", country: "CN", event: "Industrial Production", impact: "MEDIUM", prev: "6.2%", consensus: "6.5%", actual: "--" },
-    { time: "08:30", country: "ID", event: "Trade Balance", impact: "MEDIUM", prev: "$2.8B", consensus: "$3.0B", actual: "--" },
-  ];
+  const renderLoading = () => (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+
+  if (macroState.status === "loading" || calendarState.status === "loading") {
+    return <div className="space-y-6">{renderLoading()}</div>;
+  }
+
+  if (macroState.status === "error") {
+    return <div className="space-y-6">{renderError(macroState.message)}</div>;
+  }
+
+  const macroData = macroState.data;
+  const calendarData = calendarState.status === "ready" ? calendarState.data : [];
+
+  const indonesiaMacro = macroData.filter((m) => m.source === "BI" || m.source === "BPS");
+  const globalMacro = macroData.filter((m) => m.source !== "BI" && m.source !== "BPS");
 
   const keyRates = [
-    { label: "BI Rate", value: 5.75, unit: "%", icon: Banknote, change: 0, trend: "neutral" },
-    { label: "Inflation (CPI YoY)", value: 2.4, unit: "%", icon: TrendingUp, change: 0.3, trend: "up" },
-    { label: "USD/IDR", value: 15650, unit: "", icon: Coins, change: 70, trend: "up" },
-    { label: "10Y IDN Bond", value: 6.65, unit: "%", icon: Target, change: 0.07, trend: "up" },
-  ];
-
-  const indicatorsTable = [
-    { indicator: "BI Rate", current: 5.75, previous: 5.75, change: 0, unit: "%", trend: "neutral", source: "BI" },
-    { indicator: "Inflation (CPI YoY)", current: 2.4, previous: 2.1, change: 0.3, unit: "%", trend: "up", source: "BPS" },
-    { indicator: "GDP (YoY)", current: 5.05, previous: 5.11, change: -0.06, unit: "%", trend: "down", source: "BPS" },
-    { indicator: "PMI Manufacturing", current: 52.1, previous: 51.8, change: 0.3, unit: "", trend: "up", source: "BPS" },
-    { indicator: "Trade Balance", current: 3.2, previous: 2.8, change: 0.4, unit: "B USD", trend: "up", source: "BPS" },
-    { indicator: "Current Account", current: -0.8, previous: -1.2, change: 0.4, unit: "% GDP", trend: "up", source: "BI" },
-    { indicator: "USD/IDR", current: 15650, previous: 15580, change: 70, unit: "", trend: "up", source: "BI" },
-    { indicator: "10Y IDN Bond", current: 6.65, previous: 6.58, change: 0.07, unit: "%", trend: "up", source: "BI" },
-  ];
-
-  const upcomingSchedule = [
-    { date: "2024-01-15", time: "09:00", country: "ID", event: "CPI YoY", impact: "HIGH", estimate: "2.3%" },
-    { date: "2024-01-15", time: "19:30", country: "US", event: "CPI YoY", impact: "HIGH", estimate: "2.9%" },
-    { date: "2024-01-15", time: "21:00", country: "US", event: "Fed Decision", impact: "HIGH", estimate: "5.25%" },
-    { date: "2024-01-16", time: "20:30", country: "CN", event: "Industrial Production", impact: "MEDIUM", estimate: "6.5%" },
-    { date: "2024-01-16", time: "08:30", country: "ID", event: "Trade Balance", impact: "MEDIUM", estimate: "$3.0B" },
-    { date: "2024-01-17", time: "14:00", country: "ID", event: "BI Rate Decision", impact: "HIGH", estimate: "5.75%" },
-    { date: "2024-01-18", time: "20:30", country: "US", event: "Retail Sales", impact: "MEDIUM", estimate: "0.3%" },
-    { date: "2024-01-19", time: "09:30", country: "CN", event: "GDP QoQ", impact: "HIGH", estimate: "1.2%" },
-  ];
-
-  const newsList = [
-    { date: "2024-01-15", title: "BI Holds Rate Steady at 5.75% Amid Stable Inflation", source: "Bloomberg", category: "Central Bank" },
-    { date: "2024-01-14", title: "Indonesia Inflation Accelerates to 2.4% in December", source: "Reuters", category: "Inflation" },
-    { date: "2024-01-13", title: "Rupiah Weakens Past 15,600 on Strong Dollar", source: "Financial Times", category: "FX" },
-    { date: "2024-01-12", title: "Indonesia Trade Surplus Widens to $3.2B in November", source: "Nikkei Asia", category: "Trade" },
-    { date: "2024-01-11", title: "Fed Minutes Signal Patience on Rate Cuts", source: "Wall Street Journal", category: "Global Macro" },
-    { date: "2024-01-10", title: "Indonesia Q4 GDP Growth Beats Estimates at 5.05%", source: "The Jakarta Post", category: "GDP" },
+    { label: "BI Rate", value: macroData.find(m => m.indicator === "BI Rate")?.current ?? 5.75, unit: "%", icon: Banknote, change: macroData.find(m => m.indicator === "BI Rate")?.change ?? 0, trend: macroData.find(m => m.indicator === "BI Rate")?.trend ?? "neutral" },
+    { label: "Inflation (CPI YoY)", value: macroData.find(m => m.indicator === "Inflation (CPI YoY)")?.current ?? 2.4, unit: "%", icon: TrendingUp, change: macroData.find(m => m.indicator === "Inflation (CPI YoY)")?.change ?? 0.3, trend: macroData.find(m => m.indicator === "Inflation (CPI YoY)")?.trend ?? "up" },
+    { label: "USD/IDR", value: macroData.find(m => m.indicator === "USD/IDR")?.current ?? 15650, unit: "", icon: Coins, change: macroData.find(m => m.indicator === "USD/IDR")?.change ?? 70, trend: macroData.find(m => m.indicator === "USD/IDR")?.trend ?? "up" },
+    { label: "10Y IDN Bond", value: macroData.find(m => m.indicator === "10Y IDN Bond")?.current ?? 6.65, unit: "%", icon: Target, change: macroData.find(m => m.indicator === "10Y IDN Bond")?.change ?? 0.07, trend: macroData.find(m => m.indicator === "10Y IDN Bond")?.trend ?? "up" },
   ];
 
   return (
@@ -178,7 +176,7 @@ export default function MacroPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {indicatorsTable.map((item) => (
+                {macroData.map((item) => (
                   <TableRow key={item.indicator}>
                     <TableCell className="font-medium">{item.indicator}</TableCell>
                     <TableCell className="font-mono font-semibold">{item.current.toLocaleString()}{item.unit}</TableCell>
@@ -231,7 +229,7 @@ export default function MacroPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {upcomingSchedule.map((event) => (
+                {calendarData.map((event) => (
                   <TableRow key={`${event.date}-${event.time}-${event.event}`}>
                     <TableCell className="text-sm">{event.date}</TableCell>
                     <TableCell className="text-sm">{event.time}</TableCell>
@@ -248,44 +246,14 @@ export default function MacroPage() {
                         {event.impact}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-sm">{event.estimate}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{event.consensus}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
         </CardContent>
-      </Card>
-
-      {/* News List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">News</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {newsList.map((news) => (
-              <div
-                key={`${news.date}-${news.title}`}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border border-border/50 rounded-lg hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex-shrink-0">
-                  <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <span className="sr-only">{news.date}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{news.title}</p>
-                  <p className="text-xs text-muted-foreground">{news.source} • {news.category}</p>
-                </div>
-                <Button variant="ghost" size="sm" className="flex-shrink-0">
-                  <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                  <span className="sr-only">Read more</span>
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+</Card>
     </div>
   );
 }

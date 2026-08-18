@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -28,6 +28,7 @@ import {
   Calendar,
   Globe,
   Plus,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -37,22 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-
-interface ResearchMemo {
-  id: number;
-  title: string;
-  tickers: string[];
-  date: string;
-  thesis: string;
-  scores: {
-    technical: number;
-    smartMoney: number;
-    fundamental: number;
-    structure: number;
-    regime: number;
-    breadth: number;
-  };
-}
+import { getResearchMemos, type ResearchMemo } from "@/lib/api";
 
 interface HistoryItem {
   id: number;
@@ -82,6 +68,11 @@ interface QuickTemplate {
   category: string;
 }
 
+type LoadState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; data: ResearchMemo[] };
+
 export default function ResearchPage() {
   const [activeTab, setActiveTab] = useState("workspace");
   const [query, setQuery] = useState("");
@@ -97,33 +88,22 @@ export default function ResearchPage() {
     { id: 2, title: "Momentum Strategy Backtest", date: "2024-01-10", tags: ["MOMENTUM", "BACKTEST"], content: "..." },
     { id: 3, title: "Telkom Fundamental Analysis", date: "2024-01-10", tags: ["TLKM", "FUNDAMENTAL"], content: "..." },
   ]);
+  const [memosState, setMemosState] = useState<LoadState>({ status: "loading" });
 
-  const researchMemos: ResearchMemo[] = [
-    {
-      id: 1,
-      title: "Banking Sector Deep Dive",
-      tickers: ["BBCA", "BBRI", "BMRI", "BBNI"],
-      date: "2024-01-15",
-      thesis: "Banking sector shows strong fundamentals with improving NIM trends and controlled asset quality. BBCA leads with best-in-class ROE and digital adoption.",
-      scores: { technical: 88, smartMoney: 79, fundamental: 91, structure: 85, regime: 82, breadth: 78 },
-    },
-    {
-      id: 2,
-      title: "Momentum Strategy Backtest",
-      tickers: ["TLKM", "ASII", "UNTR", "INCO"],
-      date: "2024-01-10",
-      thesis: "Cross-sectional momentum factor remains robust in IDX. 12-1 monthly rebalance captures trending names while avoiding reversals.",
-      scores: { technical: 92, smartMoney: 74, fundamental: 68, structure: 88, regime: 79, breadth: 71 },
-    },
-    {
-      id: 3,
-      title: "Telkom Fundamental Analysis",
-      tickers: ["TLKM"],
-      date: "2024-01-10",
-      thesis: "TLKM offers defensive characteristics with tower monetization upside. FCF yield attractive vs peers. Regulatory risk on tariff caps.",
-      scores: { technical: 71, smartMoney: 65, fundamental: 84, structure: 76, regime: 80, breadth: 69 },
-    },
-  ];
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getResearchMemos();
+        setMemosState({ status: "ready", data });
+      } catch (err) {
+        setMemosState({
+          status: "error",
+          message: err instanceof Error ? err.message : "Failed to load research memos",
+        });
+      }
+    }
+    fetchData();
+  }, []);
 
   const templates: TemplateItem[] = [
     { title: "Stock Deep Dive", desc: "Full fundamental & technical analysis", icon: Zap, prompt: "Analyze {TICKER} comprehensively" },
@@ -168,6 +148,31 @@ export default function ResearchPage() {
         .replace("{MACRO_EVENT}", "BI Rate Decision")
     );
   };
+
+  if (memosState.status === "loading") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (memosState.status === "error") {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-destructive">Failed to load research memos</p>
+            <p className="text-sm text-muted-foreground">{memosState.message}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const researchMemos = memosState.data;
 
   return (
     <div className="space-y-6">

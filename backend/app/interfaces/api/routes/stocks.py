@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -182,3 +182,76 @@ async def stock_technical(
         **{key: indicators.get(key) for key in keys},
         "asof": indicators.get("asof_date"),
     }
+
+
+@router.get("/compare", response_model=list[dict[str, Any]])
+async def stock_compare(
+    tickers: list[str] = Query(..., description="List of tickers to compare"),
+    profile: str = "balanced",
+    session: AsyncSession = Depends(get_session),
+) -> list[dict[str, Any]]:
+    """Compare multiple stocks side by side."""
+    results = []
+    for ticker in tickers:
+        score = await get_latest_score(session, ticker, profile)
+        if not score:
+            continue
+
+        from sqlalchemy import select
+
+        result = await session.execute(select(Stock).where(Stock.ticker == ticker))
+        stock = result.scalars().first()
+        if not stock:
+            continue
+
+        price_row = (
+            await session.execute(
+                select(
+                    OhlcvDaily.close,
+                    OhlcvDaily.trade_date,
+                    OhlcvDaily.volume,
+                    OhlcvDaily.turnover,
+                )
+                .where(OhlcvDaily.ticker == f"{ticker}.JK")
+                .order_by(OhlcvDaily.trade_date.desc())
+                .limit(1)
+            )
+        ).first()
+        prev_row = (
+            await session.execute(
+                select(OhlcvDaily.close)
+                .where(OhlcvDaily.ticker == f"{ticker}.JK")
+                .order_by(OhlcvDaily.trade_date.desc())
+                .offset(1)
+                .limit(1)
+            )
+        ).first()
+        price = float(price_row[0]) if price_row and price_row[0] is not None else 0.0
+        prev = float(prev_row[0]) if prev_row and prev_row[0] is not None else price
+        change = price - prev
+        change_pct = change / prev * 100.0 if prev else 0.0
+        shares = float(stock.shares_outstanding) if stock.shares_outstanding else 0.0
+
+        comps = score.score_components or {}
+
+        results.append({
+            "ticker": score.ticker,
+            "company": stock.name,
+            "sector": str(stock.sector_id) if stock.sector_id else "UNKNOWN",
+            "price": price,
+            "change": change,
+            "volume": int(price_row[2]) if price_row and price_row[2] is not None else 0,
+            "turnover": (
+                float(price_row[3]) if price_row and price_row[3] is not None else 0.0
+            ),
+            "marketCap": price * shares,
+            "technical": comps.get("technical", 0),
+            "fundamental": comps.get("fundamental", 0),
+            "momentum": comps.get("momentum", 0),
+            "smartMoney": comps.get("smart_money", 0),
+            "sectorScore": score.sector_score or 0,
+            "risk": comps.get("risk", 0),
+            "ml": comps.get("ml", 0),
+            "opportunity": score.opportunity_score or 0,
+        })
+    return results

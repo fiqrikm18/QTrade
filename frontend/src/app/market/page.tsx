@@ -1,6 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Loader2,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  BarChart2,
+  Target,
+  AlertTriangle,
+  Clock,
+  Zap,
+  Eye,
+  ExternalLink,
+  Download,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,18 +26,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PriceChange } from "@/components/ui/price-change";
 import {
   getMarketOverview,
-  getStockAnalysis,
   type MarketOverview,
   type MoverItem,
+  getSectorPerformance,
+  type SectorPerformance,
 } from "@/lib/api";
-import { PriceChange } from "@/components/ui/price-change";
 
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; data: MarketOverview };
+  | { status: "ready"; data: MarketOverview; sectors: SectorPerformance[] };
 
 const REGIME_VARIANT: Record<
   string,
@@ -53,13 +68,7 @@ function fmtPct(v: number | null | undefined): string {
   return v > 0 ? `+${s}` : s;
 }
 
-function MoverTable({
-  title,
-  items,
-}: {
-  title: string;
-  items: MoverItem[];
-}) {
+function MoverTable({ title, items }: { title: string; items: MoverItem[] }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -99,35 +108,65 @@ function MoverTable({
   );
 }
 
-export default function DashboardPage() {
+function SectorTable({ sectors }: { sectors: SectorPerformance[] }) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base">Sector Performance</CardTitle>
+        <Badge variant="outline" className="text-xs">
+          {sectors.length} sectors
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Sector</TableHead>
+              <TableHead className="w-24">Score</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sectors.map((sector) => (
+              <TableRow key={sector.ticker}>
+                <TableCell className="font-medium">{sector.ticker}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      sector.sector_score >= 80
+                        ? "success"
+                        : sector.sector_score >= 60
+                          ? "default"
+                          : "destructive"
+                    }
+                  >
+                    {fmtNum(sector.sector_score, 1)}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function MarketPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [bbca, setBbca] = useState<{
-    price: number;
-    changePct: number;
-    score: number;
-    classification: string;
-  } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
     try {
-      const data = await getMarketOverview();
-      setState({ status: "ready", data });
-      try {
-        const a = await getStockAnalysis("BBCA");
-        setBbca({
-          price: a.price ?? 0,
-          changePct: a.change_pct ?? 0,
-          score: a.opportunity_score ?? 0,
-          classification: a.classification ?? "neutral",
-        });
-      } catch {
-        setBbca(null);
-      }
+      const [data, sectors] = await Promise.all([
+        getMarketOverview(),
+        getSectorPerformance(),
+      ]);
+      setState({ status: "ready", data, sectors });
     } catch (err) {
       setState({
         status: "error",
-        message: err instanceof Error ? err.message : "Failed to load market data",
+        message:
+          err instanceof Error ? err.message : "Failed to load market data",
       });
     }
   }
@@ -136,29 +175,18 @@ export default function DashboardPage() {
     let cancelled = false;
     async function initialLoad() {
       try {
-        const data = await getMarketOverview();
+        const [data, sectors] = await Promise.all([
+          getMarketOverview(),
+          getSectorPerformance(),
+        ]);
         if (cancelled) return;
-        setState({ status: "ready", data });
-        try {
-          const a = await getStockAnalysis("BBCA");
-          if (cancelled) return;
-          setBbca({
-            price: a.price ?? 0,
-            changePct: a.change_pct ?? 0,
-            score: a.opportunity_score ?? 0,
-            classification: a.classification ?? "neutral",
-          });
-        } catch {
-          if (!cancelled) setBbca(null);
-        }
+        setState({ status: "ready", data, sectors });
       } catch (err) {
         if (!cancelled) {
           setState({
             status: "error",
             message:
-              err instanceof Error
-                ? err.message
-                : "Failed to load market data",
+              err instanceof Error ? err.message : "Failed to load market data",
           });
         }
       }
@@ -178,7 +206,7 @@ export default function DashboardPage() {
   if (state.status === "loading") {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        Loading market data...
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -199,7 +227,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { data } = state;
+  const { data, sectors } = state;
   const regime = data.regime.regime;
   const regimeVariant = REGIME_VARIANT[regime] ?? "default";
   const breadth = data.breadth.breadth_score;
@@ -222,45 +250,58 @@ export default function DashboardPage() {
 
       {/* Market Header */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">IHSG</p>
-              <p className="text-3xl font-bold">
-                {bbca ? fmtNum(bbca.price) : "--"}
-              </p>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              IHSG Index
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {fmtNum(data.macro?.support ?? 0)}
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-green-500">
-                {bbca ? fmtPct(bbca.changePct) : "--"}
-              </p>
+            <p className="text-sm text-muted-foreground">
+              Regime: <Badge variant={regimeVariant}>{regime}</Badge>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              Market Breadth
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{fmtNum(breadth, 1)}</div>
+            <p className="text-sm text-muted-foreground">Breadth Score</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              Regime Confidence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {fmtNum(data.regime.confidence, 0)}%
             </div>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant={regimeVariant}>{regime}</Badge>
-            {bbca && (
-              <Badge variant={regimeVariant} className="text-xs">
-                BBCA {bbca.classification}
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Breadth Score</p>
-          <p className="text-2xl font-bold">{fmtNum(breadth, 1)}</p>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Regime Confidence</p>
-          <p className="text-2xl font-bold">
-            {fmtNum(data.regime.confidence, 0)}%
-          </p>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">BBCA Opportunity</p>
-          <p className="text-2xl font-bold">
-            {bbca ? fmtNum(bbca.score, 1) : "--"}
-          </p>
-        </div>
+            <p className="text-sm text-muted-foreground">Confidence</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              Top Opportunities
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {data.top_opportunities.length}
+            </div>
+            <p className="text-sm text-muted-foreground">Stocks ranked</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -281,7 +322,9 @@ export default function DashboardPage() {
               <div className="mt-4 space-y-2 text-sm">
                 {Object.entries(data.regime.components).map(([key, value]) => (
                   <div key={key} className="flex justify-between">
-                    <span className="capitalize">{key.replace(/_/g, " ")}</span>
+                    <span className="capitalize">
+                      {key.replaceAll(/_/g, " ")}
+                    </span>
                     <span className="font-medium">
                       {typeof value === "number" ? fmtNum(value, 1) : "--"}
                     </span>
@@ -343,10 +386,7 @@ export default function DashboardPage() {
                 <TableBody>
                   {data.top_opportunities.length === 0 ? (
                     <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        className="text-muted-foreground"
-                      >
+                      <TableCell colSpan={3} className="text-muted-foreground">
                         No scan yet
                       </TableCell>
                     </TableRow>
@@ -367,7 +407,7 @@ export default function DashboardPage() {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
+            </CardContent>{" "}
           </Card>
         </div>
       </div>
@@ -375,6 +415,35 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MoverTable title="Top Gainers" items={data.top_gainers} />
         <MoverTable title="Top Losers" items={data.top_losers} />
+      </div>
+
+      {/* Sector Performance */}
+      <SectorTable sectors={sectors} />
+
+      {/* Macro Risk/Support */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-base">Macro Risk</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-red-600">
+              {fmtNum(data.macro?.risk ?? 0, 1)}
+            </div>
+            <p className="text-sm text-muted-foreground">Risk Score</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-base">Macro Support</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-600">
+              {fmtNum(data.macro?.support ?? 0, 1)}
+            </div>
+            <p className="text-sm text-muted-foreground">Support Score</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

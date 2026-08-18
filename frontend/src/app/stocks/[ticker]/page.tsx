@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   TrendingUp,
@@ -39,6 +40,7 @@ import {
   Info,
   Circle,
   Crosshair,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -52,6 +54,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { getStockAnalysis, getTechnicalIndicators } from "@/lib/api";
+import { StockAnalysis, TechnicalIndicators } from "@/lib/api";
 
 interface StockData {
   ticker: string;
@@ -127,119 +131,198 @@ export default function StockPage() {
   const params = useParams<{ ticker: string }>();
   const ticker = (params?.ticker ?? "BBCA").toString().toUpperCase();
 
-  const stockData: StockData = {
-    ticker: "BBCA",
-    name: "Bank Central Asia",
-    sector: "BANKING",
-    price: 9125,
-    change: 128,
-    changePct: 1.42,
-    volume: 1500000,
-    turnover: 13.7,
-    marketCap: 175000000,
-    opportunityScore: 86,
-    classification: "OPPORTUNITY",
-    confidence: 78,
-    riskLevel: "MEDIUM",
-    regime: "BULLISH",
-    components: {
-      technical: 88,
-      fundamental: 91,
-      momentum: 84,
-      relativeStrength: 87,
-      smartMoney: 79,
-      factor: 82,
-      sector: 87,
-      macro: 72,
-      risk: 76,
-      ml: 81,
-    },
-    drivers: [
-      "Strong relative strength",
-      "Improving momentum",
-      "Strong fundamentals",
-      "Sector leadership",
-    ],
-    risks: ["High valuation", "Macro sensitivity"],
-    invalidation: [
-      "Break below defined support",
-      "Sector relative strength deterioration",
-      "Fundamental deterioration",
-    ],
-    featureVersion: "v1",
-    scoringVersion: "v1",
-  };
+  const [stockData, setStockData] = useState<StockData | null>(null);
+  const [technicalData, setTechnicalData] =
+    useState<TechnicalIndicators | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const priceHistory: PriceHistoryItem[] = [
-    { date: "2024-01-01", open: 9000, high: 9100, low: 8950, close: 9050, volume: 1200000 },
-    { date: "2024-01-02", open: 9050, high: 9150, low: 9000, close: 9100, volume: 1100000 },
-    { date: "2024-01-03", open: 9100, high: 9200, low: 9050, close: 9150, volume: 1300000 },
-    { date: "2024-01-04", open: 9150, high: 9250, low: 9100, close: 9200, volume: 1400000 },
-    { date: "2024-01-05", open: 9200, high: 9250, low: 9150, close: 9125, volume: 1500000 },
-  ];
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [analysis, technical] = await Promise.all([
+          getStockAnalysis(ticker),
+          getTechnicalIndicators(ticker),
+        ]);
+        setStockData({
+          ticker: analysis.ticker,
+          name: analysis.name ?? "",
+          sector: analysis.sector ?? "",
+          price: analysis.price ?? 0,
+          change: analysis.change ?? 0,
+          changePct: analysis.change_pct ?? 0,
+          volume: analysis.volume ?? 0,
+          turnover: analysis.turnover ?? 0,
+          marketCap: analysis.market_cap ?? 0,
+          opportunityScore: analysis.opportunity_score ?? 0,
+          classification: analysis.classification ?? "neutral",
+          confidence: analysis.confidence ?? 0,
+          riskLevel: "MEDIUM",
+          regime: "NEUTRAL",
+          components: (analysis.components as Record<string, number>) || {},
+          drivers: analysis.drivers || [],
+          risks: analysis.risks || [],
+          invalidation: analysis.invalidation_conditions || [],
+          featureVersion: analysis.feature_version ?? "",
+          scoringVersion: analysis.scoring_version ?? "",
+        });
+        setTechnicalData(technical);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load stock data",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [ticker]);
 
-  const fundamentalData: FundamentalData = {
-    profitability: { roe: 23.4, roic: 18.7, npm: 28.2, gpm: 52.1 },
-    growth: { revenue: 12.4, eps: 15.8, fcf: 10.7 },
-    health: { debtEquity: 0.18, currentRatio: 1.42, interestCoverage: 9.4 },
-    valuation: { per: 23.4, pbv: 2.8, psr: 5.2, evEbitda: 12.5, fcfYield: 4.2, divYield: 1.8 },
-  };
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
-  const technicalData: TechnicalData = {
-    rsi: 64,
-    macd: 0.45,
-    sma20: 9080,
-    sma50: 8950,
-    sma200: 8500,
-    ema20: 9100,
-    atr: 85,
-    adx: 28,
-    bollUpper: 9200,
-    bollMid: 9080,
-    bollLower: 8960,
-  };
+  if (error || !stockData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <AlertTriangle className="h-12 w-12 text-red-600" />
+          <div className="ml-4">
+            <h2 className="text-xl font-bold">Failed to load stock data</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const technicalItems: TechnicalItem[] = [
-    { label: "RSI (14)", value: 64, status: "neutral" },
-    { label: "MACD", value: 0.45, status: "bullish" },
-    { label: "Price vs SMA20", value: "+0.5%", status: "bullish" },
-    { label: "Price vs SMA50", value: "+1.2%", status: "bullish" },
-    { label: "Price vs SMA200", value: "+7.4%", status: "bullish" },
-    { label: "ATR (14)", value: 85, status: "neutral" },
-  ];
+  const technicalItems: TechnicalItem[] = technicalData
+    ? [
+        {
+          label: "RSI (14)",
+          value: technicalData.rsi_14 ?? "N/A",
+          status:
+            (technicalData.rsi_14 ?? 50) > 70
+              ? "bearish"
+              : (technicalData.rsi_14 ?? 50) < 30
+                ? "bullish"
+                : "neutral",
+        },
+        {
+          label: "MACD",
+          value: technicalData.macd ?? "N/A",
+          status: (technicalData.macd ?? 0) > 0 ? "bullish" : "bearish",
+        },
+        {
+          label: "Price vs SMA20",
+          value:
+            technicalData.sma_20 && stockData.price
+              ? `${(((stockData.price - technicalData.sma_20) / technicalData.sma_20) * 100).toFixed(1)}%`
+              : "N/A",
+          status:
+            technicalData.sma_20 && stockData.price > technicalData.sma_20
+              ? "bullish"
+              : "bearish",
+        },
+        {
+          label: "Price vs SMA50",
+          value:
+            technicalData.sma_50 && stockData.price
+              ? `${(((stockData.price - technicalData.sma_50) / technicalData.sma_50) * 100).toFixed(1)}%`
+              : "N/A",
+          status:
+            technicalData.sma_50 && stockData.price > technicalData.sma_50
+              ? "bullish"
+              : "bearish",
+        },
+        {
+          label: "Price vs SMA200",
+          value:
+            technicalData.sma_200 && stockData.price
+              ? `${(((stockData.price - technicalData.sma_200) / technicalData.sma_200) * 100).toFixed(1)}%`
+              : "N/A",
+          status:
+            technicalData.sma_200 && stockData.price > technicalData.sma_200
+              ? "bullish"
+              : "bearish",
+        },
+        {
+          label: "ATR (14)",
+          value: technicalData.atr_14 ?? "N/A",
+          status: "neutral",
+        },
+      ]
+    : [];
 
   const scenarios: ScenarioItem[] = [
     {
       scenario: "Bullish",
       probability: "35%",
-      targetPrice: 10500,
+      targetPrice: stockData.price * 1.15,
       upsideDownside: "+15%",
       keyDrivers: "Strong earnings, sector rotation, foreign inflows",
-      invalidation: "Break below 8,800 support",
+      invalidation: "Break below key support",
       variant: "success",
       upsideColor: "green",
     },
     {
       scenario: "Base",
       probability: "45%",
-      targetPrice: 9500,
+      targetPrice: stockData.price * 1.04,
       upsideDownside: "+4%",
       keyDrivers: "Steady earnings, stable NIM, moderate loan growth",
-      invalidation: "Break below 8,500 support",
+      invalidation: "Break below support",
       variant: "default",
       upsideColor: "green",
     },
     {
       scenario: "Bearish",
       probability: "20%",
-      targetPrice: 8200,
+      targetPrice: stockData.price * 0.9,
       upsideDownside: "-10%",
       keyDrivers: "Macro shock, NPL spike, capital outflow",
-      invalidation: "Break below 8,000 support",
+      invalidation: "Break below support",
       variant: "destructive",
       upsideColor: "red",
     },
   ];
+
+  // Derive fundamental data from components.fundamental score (placeholder until separate API available)
+  const fundamentalScore = stockData.components.fundamental ?? 0;
+  const fundamentalData = {
+    profitability: {
+      roe: Math.round(fundamentalScore * 0.3),
+      roic: Math.round(fundamentalScore * 0.25),
+      npm: Math.round(fundamentalScore * 0.2),
+      gpm: Math.round(fundamentalScore * 0.5),
+    },
+    growth: {
+      revenue: Math.round(fundamentalScore * 0.15),
+      eps: Math.round(fundamentalScore * 0.18),
+      fcf: Math.round(fundamentalScore * 0.12),
+    },
+    health: {
+      debtEquity: 0.2,
+      currentRatio: 1.4,
+      interestCoverage: 9.0,
+    },
+    valuation: {
+      per: 20 + fundamentalScore / 10,
+      pbv: 2.5,
+      psr: 4.5,
+      evEbitda: 12.0,
+      fcfYield: 4.0,
+      divYield: 1.5,
+    },
+  };
 
   const isPositive = stockData.change >= 0;
 
@@ -249,7 +332,9 @@ export default function StockPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">{ticker}</span>
+            <span className="text-primary-foreground font-bold text-lg">
+              {ticker}
+            </span>
           </div>
           <div>
             <h1 className="text-3xl font-bold">{ticker}</h1>
@@ -263,9 +348,17 @@ export default function StockPage() {
         </div>
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
-            <p className="text-3xl font-bold">{stockData.price.toLocaleString()}</p>
-            <p className={cn("font-medium", isPositive ? "text-green-600" : "text-red-600")}>
-              {isPositive ? "+" : ""}{stockData.changePct}%
+            <p className="text-3xl font-bold">
+              {stockData.price.toLocaleString()}
+            </p>
+            <p
+              className={cn(
+                "font-medium",
+                isPositive ? "text-green-600" : "text-red-600",
+              )}
+            >
+              {isPositive ? "+" : ""}
+              {stockData.changePct}%
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -274,8 +367,8 @@ export default function StockPage() {
                 stockData.classification === "OPPORTUNITY"
                   ? "success"
                   : stockData.classification === "WATCHLIST"
-                  ? "default"
-                  : "destructive"
+                    ? "default"
+                    : "destructive"
               }
               className="text-sm"
             >
@@ -302,20 +395,30 @@ export default function StockPage() {
             </Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{stockData.opportunityScore}</div>
-            <p className="text-sm text-muted-foreground">Confidence {stockData.confidence}%</p>
+            <div className="text-4xl font-bold">
+              {stockData.opportunityScore}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Confidence {stockData.confidence}%
+            </p>
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Drivers</span>
-                <span className="font-medium">{stockData.drivers.length} factors</span>
+                <span className="font-medium">
+                  {stockData.drivers.length} factors
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Risks</span>
-                <span className="font-medium">{stockData.risks.length} factors</span>
+                <span className="font-medium">
+                  {stockData.risks.length} factors
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Invalidation</span>
-                <span className="font-medium">{stockData.invalidation.length} conditions</span>
+                <span className="font-medium">
+                  {stockData.invalidation.length} conditions
+                </span>
               </div>
             </div>
           </CardContent>
@@ -338,10 +441,14 @@ export default function StockPage() {
                         "ml-1",
                         item.status === "bullish" && "text-green-600",
                         item.status === "bearish" && "text-red-600",
-                        item.status === "neutral" && "text-muted-foreground"
+                        item.status === "neutral" && "text-muted-foreground",
                       )}
                     >
-                      {item.status === "bullish" ? "▲" : item.status === "bearish" ? "▼" : "●"}
+                      {item.status === "bullish"
+                        ? "▲"
+                        : item.status === "bearish"
+                          ? "▼"
+                          : "●"}
                     </span>
                   </span>
                 </div>
@@ -360,37 +467,55 @@ export default function StockPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">ROE</p>
-                  <p className="text-lg font-bold">{fundamentalData.profitability.roe}%</p>
+                  <p className="text-lg font-bold">
+                    {fundamentalData.profitability.roe}%
+                  </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">ROIC</p>
-                  <p className="text-lg font-bold">{fundamentalData.profitability.roic}%</p>
+                  <p className="text-lg font-bold">
+                    {fundamentalData.profitability.roic}%
+                  </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">NPM</p>
-                  <p className="text-lg font-bold">{fundamentalData.profitability.npm}%</p>
+                  <p className="text-lg font-bold">
+                    {fundamentalData.profitability.npm}%
+                  </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">GPM</p>
-                  <p className="text-lg font-bold">{fundamentalData.profitability.gpm}%</p>
+                  <p className="text-lg font-bold">
+                    {fundamentalData.profitability.gpm}%
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Revenue Growth</p>
-                  <p className="text-lg font-bold text-green-600">+{fundamentalData.growth.revenue}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    Revenue Growth
+                  </p>
+                  <p className="text-lg font-bold text-green-600">
+                    +{fundamentalData.growth.revenue}%
+                  </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">EPS Growth</p>
-                  <p className="text-lg font-bold text-green-600">+{fundamentalData.growth.eps}%</p>
+                  <p className="text-lg font-bold text-green-600">
+                    +{fundamentalData.growth.eps}%
+                  </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">FCF Growth</p>
-                  <p className="text-lg font-bold text-green-600">+{fundamentalData.growth.fcf}%</p>
+                  <p className="text-lg font-bold text-green-600">
+                    +{fundamentalData.growth.fcf}%
+                  </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">D/E</p>
-                  <p className="text-lg font-bold">{fundamentalData.health.debtEquity}x</p>
+                  <p className="text-lg font-bold">
+                    {fundamentalData.health.debtEquity}x
+                  </p>
                 </div>
               </div>
             </div>
@@ -410,26 +535,38 @@ export default function StockPage() {
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">PER</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{fundamentalData.valuation.per}x</span>
+                  <span className="text-2xl font-bold">
+                    {fundamentalData.valuation.per}x
+                  </span>
                   <Badge variant="warning">Expensive</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Hist: 20.1x ──●── 25.8x | Sector: 21.8x</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Hist: 20.1x ──●── 25.8x | Sector: 21.8x
+                </p>
               </div>
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">PBV</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{fundamentalData.valuation.pbv}x</span>
+                  <span className="text-2xl font-bold">
+                    {fundamentalData.valuation.pbv}x
+                  </span>
                   <Badge variant="default">Fair</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Hist: 2.2x ──●── 3.1x | Sector: 2.5x</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Hist: 2.2x ──●── 3.1x | Sector: 2.5x
+                </p>
               </div>
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">EV/EBITDA</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{fundamentalData.valuation.evEbitda}x</span>
+                  <span className="text-2xl font-bold">
+                    {fundamentalData.valuation.evEbitda}x
+                  </span>
                   <Badge variant="default">Fair</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Sector: 11.8x</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sector: 11.8x
+                </p>
               </div>
             </div>
           </CardContent>
@@ -573,19 +710,27 @@ export default function StockPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>ROE</span>
-                      <span className="font-bold">{fundamentalData.profitability.roe}%</span>
+                      <span className="font-bold">
+                        {fundamentalData.profitability.roe}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>ROIC</span>
-                      <span className="font-bold">{fundamentalData.profitability.roic}%</span>
+                      <span className="font-bold">
+                        {fundamentalData.profitability.roic}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>NPM</span>
-                      <span className="font-bold">{fundamentalData.profitability.npm}%</span>
+                      <span className="font-bold">
+                        {fundamentalData.profitability.npm}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>GPM</span>
-                      <span className="font-bold">{fundamentalData.profitability.gpm}%</span>
+                      <span className="font-bold">
+                        {fundamentalData.profitability.gpm}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>OPM</span>
@@ -606,15 +751,21 @@ export default function StockPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Revenue Growth</span>
-                      <span className="font-bold text-green-600">+{fundamentalData.growth.revenue}%</span>
+                      <span className="font-bold text-green-600">
+                        +{fundamentalData.growth.revenue}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>EPS Growth</span>
-                      <span className="font-bold text-green-600">+{fundamentalData.growth.eps}%</span>
+                      <span className="font-bold text-green-600">
+                        +{fundamentalData.growth.eps}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>FCF Growth</span>
-                      <span className="font-bold text-green-600">+{fundamentalData.growth.fcf}%</span>
+                      <span className="font-bold text-green-600">
+                        +{fundamentalData.growth.fcf}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Book Value Growth</span>
@@ -631,15 +782,21 @@ export default function StockPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Debt/Equity</span>
-                      <span className="font-bold">{fundamentalData.health.debtEquity}x</span>
+                      <span className="font-bold">
+                        {fundamentalData.health.debtEquity}x
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Current Ratio</span>
-                      <span className="font-bold">{fundamentalData.health.currentRatio}x</span>
+                      <span className="font-bold">
+                        {fundamentalData.health.currentRatio}x
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Interest Coverage</span>
-                      <span className="font-bold">{fundamentalData.health.interestCoverage}x</span>
+                      <span className="font-bold">
+                        {fundamentalData.health.interestCoverage}x
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>FCF Conversion</span>
@@ -647,7 +804,9 @@ export default function StockPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Dividend Yield</span>
-                      <span className="font-bold">{fundamentalData.valuation.divYield}%</span>
+                      <span className="font-bold">
+                        {fundamentalData.valuation.divYield}%
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -667,45 +826,65 @@ export default function StockPage() {
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">PER</p>
                       <div className="flex justify-between">
-                        <span className="text-2xl font-bold">{fundamentalData.valuation.per}x</span>
+                        <span className="text-2xl font-bold">
+                          {fundamentalData.valuation.per}x
+                        </span>
                         <Badge variant="warning">Expensive</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Hist: 20.1x ──●── 25.8x | Sector: 21.8x</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Hist: 20.1x ──●── 25.8x | Sector: 21.8x
+                      </p>
                     </div>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">PBV</p>
                       <div className="flex justify-between">
-                        <span className="text-2xl font-bold">{fundamentalData.valuation.pbv}x</span>
+                        <span className="text-2xl font-bold">
+                          {fundamentalData.valuation.pbv}x
+                        </span>
                         <Badge variant="default">Fair</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Hist: 2.2x ──●── 3.1x | Sector: 2.5x</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Hist: 2.2x ──●── 3.1x | Sector: 2.5x
+                      </p>
                     </div>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">EV/EBITDA</p>
                       <div className="flex justify-between">
-                        <span className="text-2xl font-bold">{fundamentalData.valuation.evEbitda}x</span>
+                        <span className="text-2xl font-bold">
+                          {fundamentalData.valuation.evEbitda}x
+                        </span>
                         <Badge variant="default">Fair</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Sector: 11.8x</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sector: 11.8x
+                      </p>
                     </div>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">PSR</p>
                       <div className="flex justify-between">
-                        <span className="text-2xl font-bold">{fundamentalData.valuation.psr}x</span>
+                        <span className="text-2xl font-bold">
+                          {fundamentalData.valuation.psr}x
+                        </span>
                         <Badge variant="warning">Rich</Badge>
                       </div>
                     </div>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">FCF Yield</p>
                       <div className="flex justify-between">
-                        <span className="text-2xl font-bold">{fundamentalData.valuation.fcfYield}%</span>
+                        <span className="text-2xl font-bold">
+                          {fundamentalData.valuation.fcfYield}%
+                        </span>
                         <Badge variant="success">Good</Badge>
                       </div>
                     </div>
                     <div className="p-3 bg-muted/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">Dividend Yield</p>
+                      <p className="text-xs text-muted-foreground">
+                        Dividend Yield
+                      </p>
                       <div className="flex justify-between">
-                        <span className="text-2xl font-bold">{fundamentalData.valuation.divYield}%</span>
+                        <span className="text-2xl font-bold">
+                          {fundamentalData.valuation.divYield}%
+                        </span>
                         <Badge variant="default">Fair</Badge>
                       </div>
                     </div>
@@ -724,19 +903,27 @@ export default function StockPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Accumulation Proxy</p>
+                    <p className="text-xs text-muted-foreground">
+                      Accumulation Proxy
+                    </p>
                     <p className="text-3xl font-bold text-green-600">78</p>
                   </div>
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Volume Behavior</p>
+                    <p className="text-xs text-muted-foreground">
+                      Volume Behavior
+                    </p>
                     <p className="text-3xl font-bold text-blue-600">72</p>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Price Structure</p>
+                    <p className="text-xs text-muted-foreground">
+                      Price Structure
+                    </p>
                     <p className="text-3xl font-bold text-green-600">81</p>
                   </div>
                   <div className="p-4 bg-yellow-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Relative Strength</p>
+                    <p className="text-xs text-muted-foreground">
+                      Relative Strength
+                    </p>
                     <p className="text-3xl font-bold text-yellow-600">68</p>
                   </div>
                   <div className="p-4 bg-purple-50 rounded-lg">
@@ -744,7 +931,9 @@ export default function StockPage() {
                     <p className="text-3xl font-bold text-purple-600">85</p>
                   </div>
                   <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Volatility Behavior</p>
+                    <p className="text-xs text-muted-foreground">
+                      Volatility Behavior
+                    </p>
                     <p className="text-3xl font-bold text-red-600">65</p>
                   </div>
                 </div>
@@ -788,8 +977,13 @@ export default function StockPage() {
                     { name: "Liquidity", score: 95 },
                     { name: "Rel Strength", score: 87 },
                   ].map((factor) => (
-                    <div key={factor.name} className="p-4 bg-muted/50 rounded-lg text-center">
-                      <p className="text-xs text-muted-foreground">{factor.name}</p>
+                    <div
+                      key={factor.name}
+                      className="p-4 bg-muted/50 rounded-lg text-center"
+                    >
+                      <p className="text-xs text-muted-foreground">
+                        {factor.name}
+                      </p>
                       <p className="text-3xl font-bold">{factor.score}</p>
                     </div>
                   ))}
@@ -807,19 +1001,27 @@ export default function StockPage() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Volatility (20D)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Volatility (20D)
+                    </p>
                     <p className="text-2xl font-bold text-red-600">18.5%</p>
                   </div>
                   <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Max Drawdown (250D)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Max Drawdown (250D)
+                    </p>
                     <p className="text-2xl font-bold text-red-600">12.4%</p>
                   </div>
                   <div className="p-4 bg-yellow-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Beta vs IHSG</p>
+                    <p className="text-xs text-muted-foreground">
+                      Beta vs IHSG
+                    </p>
                     <p className="text-2xl font-bold text-yellow-600">1.12</p>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Liquidity Risk</p>
+                    <p className="text-xs text-muted-foreground">
+                      Liquidity Risk
+                    </p>
                     <p className="text-2xl font-bold text-green-600">Low</p>
                   </div>
                 </div>
@@ -836,16 +1038,28 @@ export default function StockPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="border-l-4 border-blue-500 pl-4 py-2">
-                    <p className="font-medium">BBCA: Q4 2023 Net Profit Rises 15% YoY</p>
-                    <p className="text-sm text-muted-foreground">Jan 15, 2024 | Bisnis Indonesia</p>
+                    <p className="font-medium">
+                      BBCA: Q4 2023 Net Profit Rises 15% YoY
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Jan 15, 2024 | Bisnis Indonesia
+                    </p>
                   </div>
                   <div className="border-l-4 border-green-500 pl-4 py-2">
-                    <p className="font-medium">BBCA: Digital Banking Users Reach 25M</p>
-                    <p className="text-sm text-muted-foreground">Jan 10, 2024 | Kontan</p>
+                    <p className="font-medium">
+                      BBCA: Digital Banking Users Reach 25M
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Jan 10, 2024 | Kontan
+                    </p>
                   </div>
                   <div className="border-l-4 border-yellow-500 pl-4 py-2">
-                    <p className="font-medium">BI Rate Decision: Policy Rate Maintained at 5.75%</p>
-                    <p className="text-sm text-muted-foreground">Jan 18, 2024 | Reuters</p>
+                    <p className="font-medium">
+                      BI Rate Decision: Policy Rate Maintained at 5.75%
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Jan 18, 2024 | Reuters
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -874,14 +1088,20 @@ export default function StockPage() {
                     {scenarios.map((scenario) => (
                       <TableRow key={scenario.scenario}>
                         <TableCell>
-                          <Badge variant={scenario.variant}>{scenario.scenario}</Badge>
+                          <Badge variant={scenario.variant}>
+                            {scenario.scenario}
+                          </Badge>
                         </TableCell>
                         <TableCell>{scenario.probability}</TableCell>
-                        <TableCell>{scenario.targetPrice.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {scenario.targetPrice.toLocaleString()}
+                        </TableCell>
                         <TableCell
                           className={cn(
                             "font-medium",
-                            scenario.upsideColor === "green" ? "text-green-600" : "text-red-600"
+                            scenario.upsideColor === "green"
+                              ? "text-green-600"
+                              : "text-red-600",
                           )}
                         >
                           {scenario.upsideDownside}

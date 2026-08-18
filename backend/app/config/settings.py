@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     ml_enabled: bool = False
     llm_enabled: bool = False
 
+    # LLM feature flags (docs/llm.md §2) — per-feature control
+    llm_analysis_enabled: bool = True
+    llm_news_summary_enabled: bool = True
+    llm_stock_explanation_enabled: bool = True
+    llm_macro_summary_enabled: bool = True
+    llm_nl_screener_enabled: bool = True
+    llm_research_enabled: bool = True
+
     # LLM provider config (PRD §32, docs/llm.md §2-§3)
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"

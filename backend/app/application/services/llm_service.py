@@ -99,6 +99,15 @@ _FALLBACK_NL_TREE = FilterTree.model_validate(
 )
 
 
+def _check_feature_flag(flag_name: str) -> str | None:
+    """Check a feature flag; return fallback message if disabled, None if enabled."""
+    s = get_settings()
+    if not getattr(s, flag_name, True):
+        readable = flag_name.replace("_", " ").title()
+        return _AI_PREFIX + f"{readable} disabled via feature flag."
+    return None
+
+
 class LLMService:
     """Application-layer wrapper around the sync `LLMProvider` Protocol.
 
@@ -134,6 +143,8 @@ class LLMService:
         model cites real numbers (docs/llm.md §5). Falls back to deterministic
         text when the provider is absent or raises (docs/llm.md §1.5, §9).
         """
+        if (flag_fallback := _check_feature_flag("llm_stock_explanation_enabled")):
+            return flag_fallback
         if self._provider is None:
             return _FALLBACK_DISABLED
 
@@ -161,6 +172,8 @@ class LLMService:
         emits the spec (docs/llm.md §6). On any LLM failure returns a
         permissive fallback tree so the caller still produces results.
         """
+        if _check_feature_flag("llm_nl_screener_enabled"):
+            return _FALLBACK_NL_TREE.model_copy(deep=True)
         if self._provider is None:
             return _FALLBACK_NL_TREE.model_copy(deep=True)
         try:
@@ -175,6 +188,8 @@ class LLMService:
         self, ticker: str, asof: date, news_items: list[str]
     ) -> str:
         """Summarise ``news_items`` for ``ticker`` into ``AI ENRICHED`` text."""
+        if (flag_fallback := _check_feature_flag("llm_news_summary_enabled")):
+            return flag_fallback
         if self._provider is None:
             return _FALLBACK_DISABLED
         if not news_items:
@@ -206,6 +221,8 @@ class LLMService:
         list — the model still produces narrative; the caller can rerun with a
         session for a grounded version.
         """
+        if (flag_fallback := _check_feature_flag("llm_research_enabled")):
+            return flag_fallback
         if self._provider is None:
             return _FALLBACK_DISABLED
         if not tickers:

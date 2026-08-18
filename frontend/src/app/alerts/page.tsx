@@ -69,13 +69,13 @@ const getImpactVariant = (
 const getStatusBadgeClass = (status: Alert["status"]): string => {
   switch (status) {
     case "active":
-      return "bg-blue-100 text-blue-800";
+      return "bg-info/10 text-info border-info/40";
     case "triggered":
-      return "bg-yellow-100 text-yellow-800";
+      return "bg-warning/10 text-warning border-warning/40";
     case "acknowledged":
-      return "bg-green-100 text-green-800";
+      return "bg-positive/10 text-positive border-positive/40";
     case "resolved":
-      return "bg-gray-100 text-gray-800";
+      return "bg-neutral/10 text-neutral border-neutral/40";
   }
 };
 
@@ -136,20 +136,20 @@ export default function AlertsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Alert Center</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-semibold">Alert Center</h1>
+          <p className="text-muted">
             Monitor and manage real-time alerts
           </p>
         </div>
@@ -171,12 +171,12 @@ export default function AlertsPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Filter Alerts</CardTitle>
+          <CardTitle className="text-sm">Filter Alerts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-muted mb-1">
                 Impact
               </label>
               <Select
@@ -195,7 +195,7 @@ export default function AlertsPage() {
               </Select>
             </div>
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-muted mb-1">
                 Type
               </label>
               <Select
@@ -216,7 +216,7 @@ export default function AlertsPage() {
               </Select>
             </div>
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-muted mb-1">
                 Status
               </label>
               <Select
@@ -236,7 +236,7 @@ export default function AlertsPage() {
               </Select>
             </div>
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-muted mb-1">
                 Search
               </label>
               <Input
@@ -251,7 +251,7 @@ export default function AlertsPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">
+          <CardTitle className="text-sm">
             Alerts ({filteredAlerts.length} alerts)
           </CardTitle>
         </CardHeader>
@@ -273,7 +273,7 @@ export default function AlertsPage() {
               </TableHeader>
               <TableBody>
                 {filteredAlerts.map((alert) => (
-                  <TableRow key={alert.id} className="hover:bg-muted/50">
+                  <TableRow key={alert.id} className="hover:bg-elevated-panel/50">
                     <TableCell className="font-mono text-xs">
                       {alert.id}
                     </TableCell>
@@ -327,7 +327,7 @@ export default function AlertsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          className="h-6 w-6 text-muted hover:bg-elevated-panel hover:text-foreground"
                           title="Dismiss"
                         >
                           <X className="h-3 w-3" />
@@ -335,7 +335,7 @@ export default function AlertsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          className="h-6 w-6 text-muted hover:bg-elevated-panel hover:text-foreground"
                           title="Details"
                         >
                           <Eye className="h-3 w-3" />

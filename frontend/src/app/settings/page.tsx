@@ -105,15 +105,15 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account and application preferences</p>
+          <h1 className="text-lg font-semibold">Settings</h1>
+          <p className="text-muted">Manage your account and application preferences</p>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Settings sections">
           {tabs.map((tab) => (
             <Button
@@ -131,10 +131,10 @@ export default function SettingsPage() {
         </div>
 
         {activeTab === "general" && (
-          <div className="space-y-6" role="tabpanel" aria-label="General settings">
+          <div className="space-y-4" role="tabpanel" aria-label="General settings">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Profile</CardTitle>
+                <CardTitle className="text-sm">Profile</CardTitle>
                 <CardDescription>Manage your profile information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -181,10 +181,10 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "appearance" && (
-          <div className="space-y-6" role="tabpanel" aria-label="Appearance settings">
+          <div className="space-y-4" role="tabpanel" aria-label="Appearance settings">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Theme</CardTitle>
+                <CardTitle className="text-sm">Theme</CardTitle>
                 <CardDescription>Choose your preferred color theme</CardDescription>
               </CardHeader>
               <CardContent>
@@ -200,7 +200,7 @@ export default function SettingsPage() {
                         <option.icon className="h-6 w-6" />
                         <span className="font-medium">{option.label}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground">{option.desc}</p>
+                      <p className="text-sm text-muted">{option.desc}</p>
                       <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary/20"
@@ -222,7 +222,7 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Density</CardTitle>
+                <CardTitle className="text-sm">Density</CardTitle>
                 <CardDescription>Adjust the density of the interface</CardDescription>
               </CardHeader>
               <CardContent>
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                       className="h-24 flex-col items-start justify-between p-4 text-left"
                     >
                       <span className="font-medium">{option.label}</span>
-                      <p className="text-sm text-muted-foreground">{option.desc}</p>
+                      <p className="text-sm text-muted">{option.desc}</p>
                       <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary/20"
@@ -256,28 +256,28 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Sidebar</CardTitle>
+                <CardTitle className="text-sm">Sidebar</CardTitle>
                 <CardDescription>Configure sidebar behavior</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-sm font-medium">Auto-collapse</Label>
-                    <p className="text-sm text-muted-foreground">Collapse sidebar on mobile</p>
+                    <p className="text-sm text-muted">Collapse sidebar on mobile</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-sm font-medium">Show icons only when collapsed</Label>
-                    <p className="text-sm text-muted-foreground">Show only icons when sidebar is collapsed</p>
+                    <p className="text-sm text-muted">Show only icons when sidebar is collapsed</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-sm font-medium">Persistent on desktop</Label>
-                    <p className="text-sm text-muted-foreground">Keep sidebar open on desktop</p>
+                    <p className="text-sm text-muted">Keep sidebar open on desktop</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
@@ -287,10 +287,10 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "notifications" && (
-          <div className="space-y-6" role="tabpanel" aria-label="Notifications settings">
+          <div className="space-y-4" role="tabpanel" aria-label="Notifications settings">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Email Notifications</CardTitle>
+                <CardTitle className="text-sm">Email Notifications</CardTitle>
                 <CardDescription>Configure email notification preferences</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -305,7 +305,7 @@ export default function SettingsPage() {
                       />
                       <div>
                         <Label className="text-sm font-medium">{item.label}</Label>
-                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                        <p className="text-sm text-muted">{item.desc}</p>
                       </div>
                     </div>
                   </div>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Push Notifications</CardTitle>
+                <CardTitle className="text-sm">Push Notifications</CardTitle>
                 <CardDescription>Configure push notification preferences</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -330,7 +330,7 @@ export default function SettingsPage() {
                       />
                       <div>
                         <Label className="text-sm font-medium">{item.label}</Label>
-                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                        <p className="text-sm text-muted">{item.desc}</p>
                       </div>
                     </div>
                   </div>
@@ -341,10 +341,10 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "data" && (
-          <div className="space-y-6" role="tabpanel" aria-label="Data & Privacy settings">
+          <div className="space-y-4" role="tabpanel" aria-label="Data & Privacy settings">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Data Retention</CardTitle>
+                <CardTitle className="text-sm">Data Retention</CardTitle>
                 <CardDescription>How long to keep your data</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -352,7 +352,7 @@ export default function SettingsPage() {
                   {dataRetentionOptions.map((option) => (
                     <label
                       key={option.value}
-                      className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                      className="flex items-center gap-3 p-4 border border-border rounded-md hover:bg-accent cursor-pointer transition-colors"
                     >
                       <input
                         type="radio"
@@ -364,7 +364,7 @@ export default function SettingsPage() {
                       />
                       <div>
                         <p className="font-medium">{option.label}</p>
-                        <p className="text-sm text-muted-foreground">{option.desc}</p>
+                        <p className="text-sm text-muted">{option.desc}</p>
                       </div>
                     </label>
                   ))}
@@ -374,7 +374,7 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Data Export</CardTitle>
+                <CardTitle className="text-sm">Data Export</CardTitle>
                 <CardDescription>Export your data in various formats</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -382,17 +382,17 @@ export default function SettingsPage() {
                   <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
                     <Download className="h-6 w-6 mb-2" />
                     <span className="font-medium">CSV Export</span>
-                    <p className="text-sm text-muted-foreground">Export as CSV file</p>
+                    <p className="text-sm text-muted">Export as CSV file</p>
                   </Button>
                   <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
                     <FileText className="h-6 w-6 mb-2" />
                     <span className="font-medium">JSON Export</span>
-                    <p className="text-sm text-muted-foreground">Export as JSON file</p>
+                    <p className="text-sm text-muted">Export as JSON file</p>
                   </Button>
                   <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
                     <Download className="h-6 w-6 mb-2" />
                     <span className="font-medium">Full Backup</span>
-                    <p className="text-sm text-muted-foreground">Complete data backup</p>
+                    <p className="text-sm text-muted">Complete data backup</p>
                   </Button>
                 </div>
               </CardContent>
@@ -400,11 +400,11 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Data Deletion</CardTitle>
+                <CardTitle className="text-sm">Data Deletion</CardTitle>
                 <CardDescription>Permanently delete your account and all data</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 border border-destructive bg-destructive/10 rounded-lg">
+                <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
                   <p className="text-sm text-destructive">
                     This action is irreversible. All your data, including portfolio, alerts, and research, will be
                     permanently deleted.
@@ -419,24 +419,24 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "advanced" && (
-          <div className="space-y-6" role="tabpanel" aria-label="Advanced settings">
+          <div className="space-y-4" role="tabpanel" aria-label="Advanced settings">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">API Keys</CardTitle>
+                <CardTitle className="text-sm">API Keys</CardTitle>
                 <CardDescription>Manage your API access keys</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                <div className="flex items-center justify-between p-4 border border-border rounded-md">
                   <div>
                     <p className="font-medium">Default API Key</p>
-                    <p className="text-sm text-muted-foreground font-mono">ihsg_quant_sk_live_****1234</p>
+                    <p className="text-sm text-muted font-mono">ihsg_quant_sk_live_****1234</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm">
                       <Copy className="h-4 w-4" />
                       Copy
                     </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+                    <Button variant="outline" size="sm" className="text-negative hover:bg-negative/10">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -450,11 +450,11 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Webhooks</CardTitle>
+                <CardTitle className="text-sm">Webhooks</CardTitle>
                 <CardDescription>Configure webhook endpoints for real-time events</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">No webhooks configured</p>
+                <p className="text-sm text-muted">No webhooks configured</p>
                 <Button variant="outline" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Webhook
@@ -464,7 +464,7 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Cache Management</CardTitle>
+                <CardTitle className="text-sm">Cache Management</CardTitle>
                 <CardDescription>Manage application cache</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -482,19 +482,19 @@ export default function SettingsPage() {
                     Export Cache
                   </Button>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="p-4 bg-elevated-panel/50 rounded-md">
                   <p className="text-sm font-medium mb-1">Cache Statistics</p>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Size</p>
+                      <p className="text-muted">Size</p>
                       <p className="font-mono">245 MB</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Entries</p>
+                      <p className="text-muted">Entries</p>
                       <p className="font-mono">12,847</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Hit Rate</p>
+                      <p className="text-muted">Hit Rate</p>
                       <p className="font-mono">94.2%</p>
                     </div>
                   </div>

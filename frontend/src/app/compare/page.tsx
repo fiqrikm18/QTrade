@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -215,45 +215,45 @@ export default function ComparePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
-  const fetchComparison = useCallback(async () => {
-    if (selectedTickers.length === 0) {
-      setState({ status: "ready", data: [] });
-      return;
-    }
-    setState({ status: "loading" });
-    try {
-      const apiData = await getStockCompare(selectedTickers);
-      const mappedData: StockData[] = apiData.map((item) => ({
-        ticker: item.ticker,
-        company: item.company,
-        sector: item.sector,
-        price: item.price,
-        change: item.change,
-        volume: item.volume,
-        turnover: item.turnover,
-        marketCap: item.marketCap,
-        technical: item.technical,
-        fundamental: item.fundamental,
-        momentum: item.momentum,
-        smartMoney: item.smartMoney,
-        sectorScore: item.sectorScore,
-        risk: item.risk,
-        ml: item.ml,
-        opportunity: item.opportunity,
-      }));
-      setState({ status: "ready", data: mappedData });
-    } catch (err) {
-      setState({
-        status: "error",
-        message:
-          err instanceof Error ? err.message : "Failed to load comparison data",
-      });
-    }
-  }, [selectedTickers]);
-
   useEffect(() => {
-    fetchComparison();
-  }, [fetchComparison]);
+    let cancelled = false;
+    if (selectedTickers.length === 0) return;
+    (async () => {
+      try {
+        const apiData = await getStockCompare(selectedTickers);
+        if (cancelled) return;
+        const mappedData: StockData[] = apiData.map((item) => ({
+          ticker: item.ticker,
+          company: item.company,
+          sector: item.sector,
+          price: item.price,
+          change: item.change,
+          volume: item.volume,
+          turnover: item.turnover,
+          marketCap: item.marketCap,
+          technical: item.technical,
+          fundamental: item.fundamental,
+          momentum: item.momentum,
+          smartMoney: item.smartMoney,
+          sectorScore: item.sectorScore,
+          risk: item.risk,
+          ml: item.ml,
+          opportunity: item.opportunity,
+        }));
+        setState({ status: "ready", data: mappedData });
+      } catch (err) {
+        if (cancelled) return;
+        setState({
+          status: "error",
+          message:
+            err instanceof Error ? err.message : "Failed to load comparison data",
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTickers]);
 
   const handleAddTicker = (ticker: string) => {
     const upper = ticker.toUpperCase();
@@ -262,13 +262,20 @@ export default function ComparePage() {
       !selectedTickers.includes(upper) &&
       selectedTickers.length < 6
     ) {
+      setState({ status: "loading" });
       setSelectedTickers([...selectedTickers, upper]);
       setSearchQuery("");
     }
   };
 
   const handleRemoveTicker = (ticker: string) => {
-    setSelectedTickers(selectedTickers.filter((t) => t !== ticker));
+    const next = selectedTickers.filter((t) => t !== ticker);
+    if (next.length === 0) {
+      setState({ status: "ready", data: [] });
+    } else {
+      setState({ status: "loading" });
+    }
+    setSelectedTickers(next);
   };
 
   const handleSelectChange = (value: string) => {
@@ -277,9 +284,9 @@ export default function ComparePage() {
 
   if (state.status === "loading") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </div>
     );
@@ -287,14 +294,14 @@ export default function ComparePage() {
 
   if (state.status === "error") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <AlertTriangle className="h-12 w-12 text-red-600" />
+          <AlertTriangle className="h-12 w-12 text-negative" />
           <div className="ml-4">
             <h2 className="text-xl font-bold">
               Failed to load comparison data
             </h2>
-            <p className="text-muted-foreground">{state.message}</p>
+            <p className="text-muted">{state.message}</p>
           </div>
         </div>
       </div>
@@ -304,12 +311,12 @@ export default function ComparePage() {
   const filteredData = state.data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Compare Stocks</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-semibold">Compare Stocks</h1>
+          <p className="text-muted">
             Side-by-side quantitative comparison
           </p>
         </div>
@@ -348,12 +355,12 @@ export default function ComparePage() {
         {selectedTickers.map((ticker) => (
           <div
             key={ticker}
-            className="flex items-center gap-1 px-3 py-1 bg-muted rounded-full text-sm"
+            className="flex items-center gap-1 px-3 py-1 bg-elevated-panel border border-border rounded-full text-sm"
           >
             <span className="font-medium">{ticker}</span>
             <button
               onClick={() => handleRemoveTicker(ticker)}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted hover:text-foreground"
               aria-label={`Remove ${ticker}`}
             >
               <X className="h-3 w-3" />
@@ -362,7 +369,7 @@ export default function ComparePage() {
         ))}
         {selectedTickers.length < 6 && (
           <Select onValueChange={handleSelectChange} value={searchQuery}>
-            <SelectTrigger className="px-3 py-1 text-sm text-muted-foreground border border-dashed border-border rounded-full hover:bg-accent transition-colors h-8">
+            <SelectTrigger className="px-3 py-1 text-sm text-muted border border-dashed border-border rounded-full hover:bg-elevated-panel transition-colors h-8">
               <SelectValue placeholder="+ Add Ticker" />
               <Plus className="ml-2 h-3 w-3" />
             </SelectTrigger>
@@ -385,28 +392,28 @@ export default function ComparePage() {
           <Card key={stock.ticker}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{stock.ticker}</CardTitle>
+                <CardTitle className="text-sm">{stock.ticker}</CardTitle>
                 <Badge variant="secondary">{stock.sector}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Price</span>
+                <span className="text-sm text-muted">Price</span>
                 <span className="font-bold text-lg">
                   {stock.price.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Change</span>
+                <span className="text-sm text-muted">Change</span>
                 <span
-                  className={`font-medium ${stock.change >= 0 ? "text-green-600" : "text-red-600"}`}
+                  className={`font-medium ${stock.change >= 0 ? "text-positive" : "text-negative"}`}
                 >
                   {stock.change >= 0 ? "+" : ""}
                   {stock.change}%
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted">
                   Opportunity
                 </span>
                 <Badge
@@ -429,7 +436,7 @@ export default function ComparePage() {
       {/* Comparison Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Quantitative Comparison</CardTitle>
+          <CardTitle className="text-sm">Quantitative Comparison</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -441,7 +448,7 @@ export default function ComparePage() {
                     <TableHead key={stock.ticker} className="text-center">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className="font-medium">{stock.ticker}</span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+                        <span className="text-xs text-muted truncate max-w-[100px]">
                           {stock.company}
                         </span>
                       </div>
@@ -485,7 +492,7 @@ export default function ComparePage() {
                         return (
                           <TableCell
                             key={stock.ticker}
-                            className={`${alignClass} font-medium ${changeValue >= 0 ? "text-green-600" : "text-red-600"}${customClass}`}
+                            className={`${alignClass} font-medium ${changeValue >= 0 ? "text-positive" : "text-negative"}${customClass}`}
                           >
                             {formatted}
                           </TableCell>

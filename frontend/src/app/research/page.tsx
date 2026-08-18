@@ -151,9 +151,9 @@ export default function ResearchPage() {
 
   if (memosState.status === "loading") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </div>
     );
@@ -161,11 +161,11 @@ export default function ResearchPage() {
 
   if (memosState.status === "error") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Failed to load research memos</p>
-            <p className="text-sm text-muted-foreground">{memosState.message}</p>
+            <p className="text-sm text-muted">{memosState.message}</p>
           </CardContent>
         </Card>
       </div>
@@ -175,11 +175,11 @@ export default function ResearchPage() {
   const researchMemos = memosState.data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Research Workspace</h1>
-          <p className="text-muted-foreground">Quantitative research with AI assistance</p>
+          <h1 className="text-lg font-semibold">Research Workspace</h1>
+          <p className="text-muted">Quantitative research with AI assistance</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
@@ -197,7 +197,7 @@ export default function ResearchPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="workspace" className="space-y-6">
+      <Tabs defaultValue="workspace" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workspace">Workspace</TabsTrigger>
           <TabsTrigger value="nlq">Natural Language Query</TabsTrigger>
@@ -205,11 +205,11 @@ export default function ResearchPage() {
           <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="workspace" className="space-y-6">
+        <TabsContent value="workspace" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">Research Query</CardTitle>
+                <CardTitle className="text-sm">Research Query</CardTitle>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">AI Powered</Badge>
                 </div>
@@ -244,7 +244,7 @@ export default function ResearchPage() {
 
                 {response && (
                   <div className="space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="p-4 bg-elevated-panel/50 rounded-md">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">AI Analysis</h4>
                         <Badge variant="outline" className="text-xs">AI Generated</Badge>
@@ -272,7 +272,7 @@ export default function ResearchPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Quick Research Templates</CardTitle>
+                <CardTitle className="text-sm">Quick Research Templates</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {templates.map((template) => (
@@ -283,10 +283,10 @@ export default function ResearchPage() {
                     onClick={() => handleTemplateClick(template.prompt)}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <template.icon className="h-5 w-5 text-primary" />
+                      <template.icon className="h-5 w-5 text-accent" />
                       <span className="font-medium">{template.title}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground flex-1">{template.desc}</p>
+                    <p className="text-xs text-muted flex-1">{template.desc}</p>
                     <Button variant="ghost" size="sm" className="mt-2" onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleTemplateClick(template.prompt); }}>
                       Use Template
                     </Button>
@@ -297,18 +297,18 @@ export default function ResearchPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">Recent Queries</CardTitle>
+                <CardTitle className="text-sm">Recent Queries</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {history.map((item) => (
-                    <div key={item.id} className="p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <div key={item.id} className="p-3 bg-elevated-panel/50 rounded-md hover:bg-elevated-panel transition-colors">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{item.query}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{item.response.substring(0, 100)}...</p>
+                          <p className="text-xs text-muted mt-1">{item.response.substring(0, 100)}...</p>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1 text-xs text-muted">
                           <span>{item.timestamp}</span>
                           <Button variant="ghost" size="icon" className="h-6 w-6">
                             <Copy className="h-3 w-3" />
@@ -323,10 +323,10 @@ export default function ResearchPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="nlq" className="space-y-6">
+        <TabsContent value="nlq" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Natural Language Query</CardTitle>
+              <CardTitle className="text-sm">Natural Language Query</CardTitle>
               <CardDescription>Type your question in plain English</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -378,7 +378,7 @@ export default function ResearchPage() {
           </div>
           <div className="space-y-3">
             {savedReports.map((report) => (
-              <Card key={report.id} className="hover:bg-muted/50 transition-colors">
+              <Card key={report.id} className="hover:bg-elevated-panel/50 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -390,7 +390,7 @@ export default function ResearchPage() {
                           ))}
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{report.date}</p>
+                      <p className="text-sm text-muted mt-1">{report.date}</p>
                       <div className="flex items-center gap-2 mt-3">
                         <Button variant="ghost" size="icon" className="h-7 w-7">
                           <Eye className="h-4 w-4" />
@@ -402,7 +402,7 @@ export default function ResearchPage() {
                           <FileText className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4 text-negative" />
                         </Button>
                       </div>
                     </div>
@@ -419,13 +419,13 @@ export default function ResearchPage() {
               <Card key={template.title} className="h-full flex flex-col">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{template.title}</CardTitle>
+                    <CardTitle className="text-sm">{template.title}</CardTitle>
                     <Badge variant="secondary" className="text-xs">{template.category}</Badge>
                   </div>
                   <CardDescription>{template.desc}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted mb-4">
                     Pre-configured template with data sources, calculations, and visualization templates.
                   </p>
                 </CardContent>

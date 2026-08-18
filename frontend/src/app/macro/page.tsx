@@ -5,26 +5,13 @@ import { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
-  BarChart3,
-  Globe,
-  AlertTriangle,
-  Clock,
-  Zap,
-  Target,
-  AlertCircle,
-  ArrowUp,
-  ArrowDown,
   Banknote,
   Coins,
-  Calendar,
-  FileText,
-  Building2,
-  Landmark,
-  ExternalLink,
+  Target,
+  ArrowUp,
+  ArrowDown,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,7 +30,6 @@ type LoadState<T> =
   | { status: "ready"; data: T };
 
 export default function MacroPage() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [macroState, setMacroState] = useState<LoadState<MacroIndicator[]>>({ status: "loading" });
   const [calendarState, setCalendarState] = useState<LoadState<CalendarEvent[]>>({ status: "loading" });
 
@@ -80,31 +66,28 @@ export default function MacroPage() {
   const renderError = (message: string) => (
     <Card>
       <CardContent className="pt-6">
-        <p className="text-destructive">Failed to load data</p>
-        <p className="text-sm text-muted-foreground">{message}</p>
+        <p className="text-negative">Failed to load data</p>
+        <p className="text-sm text-muted">{message}</p>
       </CardContent>
     </Card>
   );
 
   const renderLoading = () => (
     <div className="flex items-center justify-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Loader2 className="h-8 w-8 animate-spin text-accent" />
     </div>
   );
 
   if (macroState.status === "loading" || calendarState.status === "loading") {
-    return <div className="space-y-6">{renderLoading()}</div>;
+    return <div className="space-y-4">{renderLoading()}</div>;
   }
 
   if (macroState.status === "error") {
-    return <div className="space-y-6">{renderError(macroState.message)}</div>;
+    return <div className="space-y-4">{renderError(macroState.message)}</div>;
   }
 
   const macroData = macroState.data;
   const calendarData = calendarState.status === "ready" ? calendarState.data : [];
-
-  const indonesiaMacro = macroData.filter((m) => m.source === "BI" || m.source === "BPS");
-  const globalMacro = macroData.filter((m) => m.source !== "BI" && m.source !== "BPS");
 
   const keyRates = [
     { label: "BI Rate", value: macroData.find(m => m.indicator === "BI Rate")?.current ?? 5.75, unit: "%", icon: Banknote, change: macroData.find(m => m.indicator === "BI Rate")?.change ?? 0, trend: macroData.find(m => m.indicator === "BI Rate")?.trend ?? "neutral" },
@@ -114,29 +97,29 @@ export default function MacroPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Macro Dashboard</h1>
-        <p className="text-muted-foreground">Indonesia & Global macroeconomic indicators</p>
+        <h1 className="text-lg font-semibold">Macro Dashboard</h1>
+        <p className="text-xs text-muted">Indonesia & Global macroeconomic indicators</p>
       </div>
 
       {/* Key Rates Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {keyRates.map((rate) => (
           <Card key={rate.label}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{rate.label}</CardTitle>
-              <rate.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-xs font-medium text-muted">{rate.label}</CardTitle>
+              <rate.icon className="h-4 w-4 text-muted" aria-hidden="true" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-mono">
+              <div className="text-2xl font-bold tabular-nums">
                 {rate.value.toLocaleString()}{rate.unit}
               </div>
               <p className={cn(
-                "text-sm mt-1",
-                rate.trend === "up" && "text-green-600",
-                rate.trend === "down" && "text-red-600",
-                rate.trend === "neutral" && "text-muted-foreground"
+                "text-xs mt-1",
+                rate.trend === "up" && "text-positive",
+                rate.trend === "down" && "text-negative",
+                rate.trend === "neutral" && "text-muted"
               )}>
                 {rate.trend === "up" && (
                   <>
@@ -159,101 +142,97 @@ export default function MacroPage() {
 
       {/* Indicators Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Indicators</CardTitle>
+        <CardHeader className="pb-1">
+          <CardTitle className="text-sm">Indicators</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Indicator</TableHead>
-                  <TableHead className="w-24">Current</TableHead>
-                  <TableHead className="w-24">Previous</TableHead>
-                  <TableHead className="w-24">Change</TableHead>
-                  <TableHead className="w-24">Trend</TableHead>
-                  <TableHead className="w-20">Source</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Indicator</TableHead>
+                <TableHead className="w-24">Current</TableHead>
+                <TableHead className="w-24">Previous</TableHead>
+                <TableHead className="w-24">Change</TableHead>
+                <TableHead className="w-24">Trend</TableHead>
+                <TableHead className="w-20">Source</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {macroData.map((item) => (
+                <TableRow key={item.indicator}>
+                  <TableCell className="font-medium">{item.indicator}</TableCell>
+                  <TableCell className="font-semibold tabular-nums">{item.current.toLocaleString()}{item.unit}</TableCell>
+                  <TableCell className="tabular-nums text-muted">{item.previous.toLocaleString()}{item.unit}</TableCell>
+                  <TableCell className={cn(
+                    "font-medium tabular-nums",
+                    item.trend === "up" && "text-positive",
+                    item.trend === "down" && "text-negative",
+                    item.trend === "neutral" && "text-muted"
+                  )}>
+                    {item.trend === "up" && "+"}{item.change}{item.unit}
+                    {item.trend === "neutral" && " ↔"}
+                  </TableCell>
+                  <TableCell>
+                    {item.trend === "up" && (
+                      <TrendingUp className="h-4 w-4 text-positive mx-auto" aria-hidden="true" />
+                    )}
+                    {item.trend === "down" && (
+                      <TrendingDown className="h-4 w-4 text-negative mx-auto" aria-hidden="true" />
+                    )}
+                    {item.trend === "neutral" && (
+                      <div className="w-4 h-4 mx-auto" />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted text-xs">{item.source}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {macroData.map((item) => (
-                  <TableRow key={item.indicator}>
-                    <TableCell className="font-medium">{item.indicator}</TableCell>
-                    <TableCell className="font-mono font-semibold">{item.current.toLocaleString()}{item.unit}</TableCell>
-                    <TableCell className="font-mono text-muted-foreground">{item.previous.toLocaleString()}{item.unit}</TableCell>
-                    <TableCell className={cn(
-                      "font-mono font-medium",
-                      item.trend === "up" && "text-green-600",
-                      item.trend === "down" && "text-red-600",
-                      item.trend === "neutral" && "text-muted-foreground"
-                    )}>
-                      {item.trend === "up" && "+"}{item.change}{item.unit}
-                      {item.trend === "neutral" && " ↔"}
-                    </TableCell>
-                    <TableCell>
-                      {item.trend === "up" && (
-                        <TrendingUp className="h-4 w-4 text-green-600 mx-auto" aria-hidden="true" />
-                      )}
-                      {item.trend === "down" && (
-                        <TrendingDown className="h-4 w-4 text-red-600 mx-auto" aria-hidden="true" />
-                      )}
-                      {item.trend === "neutral" && (
-                        <div className="w-4 h-4 mx-auto" />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{item.source}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
       {/* Upcoming Schedule */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Upcoming Schedule</CardTitle>
+        <CardHeader className="pb-1">
+          <CardTitle className="text-sm">Upcoming Schedule</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-28">Date</TableHead>
-                  <TableHead className="w-20">Time</TableHead>
-                  <TableHead className="w-16">Country</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead className="w-20">Impact</TableHead>
-                  <TableHead className="w-24">Estimate</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-28">Date</TableHead>
+                <TableHead className="w-20">Time</TableHead>
+                <TableHead className="w-16">Country</TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead className="w-20">Impact</TableHead>
+                <TableHead className="w-24">Estimate</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {calendarData.map((event) => (
+                <TableRow key={`${event.date}-${event.time}-${event.event}`}>
+                  <TableCell className="text-xs">{event.date}</TableCell>
+                  <TableCell className="text-xs">{event.time}</TableCell>
+                  <TableCell className="text-center text-xs font-medium">{event.country}</TableCell>
+                  <TableCell className="font-medium">{event.event}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        event.impact === "HIGH" ? "destructive" :
+                        event.impact === "MEDIUM" ? "warning" : "secondary"
+                      }
+                      className="text-[10px]"
+                    >
+                      {event.impact}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-xs">{event.consensus}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {calendarData.map((event) => (
-                  <TableRow key={`${event.date}-${event.time}-${event.event}`}>
-                    <TableCell className="text-sm">{event.date}</TableCell>
-                    <TableCell className="text-sm">{event.time}</TableCell>
-                    <TableCell className="text-center text-sm font-medium">{event.country}</TableCell>
-                    <TableCell className="font-medium">{event.event}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          event.impact === "HIGH" ? "destructive" :
-                          event.impact === "MEDIUM" ? "warning" : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {event.impact}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm">{event.consensus}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
-</Card>
+      </Card>
     </div>
   );
 }

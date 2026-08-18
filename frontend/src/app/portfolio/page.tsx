@@ -102,9 +102,9 @@ export default function PortfolioPage() {
 
   if (state.status === "loading") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </div>
     );
@@ -112,11 +112,11 @@ export default function PortfolioPage() {
 
   if (state.status === "error") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Failed to load portfolio data</p>
-            <p className="text-sm text-muted-foreground">{state.message}</p>
+            <p className="text-sm text-muted">{state.message}</p>
             <Button className="mt-4" onClick={() => window.location.reload()}>
               Retry
             </Button>
@@ -146,12 +146,12 @@ export default function PortfolioPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Portfolio Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold">Portfolio Analytics</h1>
-          <p className="text-muted-foreground">Portfolio performance, risk, and attribution analysis</p>
+          <p className="text-muted">Portfolio performance, risk, and attribution analysis</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
@@ -170,50 +170,50 @@ export default function PortfolioPage() {
       </div>
 
       {/* Portfolio Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total Value</CardTitle>
+            <CardTitle className="text-sm text-muted">Total Value</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">Rp {(totalValue / 1e9).toFixed(2)}B</div>
-            <p className="text-sm text-muted-foreground">Total portfolio value</p>
+            <p className="text-sm text-muted">Total portfolio value</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total P&L</CardTitle>
+            <CardTitle className="text-sm text-muted">Total P&L</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">+Rp {(totalPnL / 1e6).toFixed(1)}M</div>
-            <p className="text-sm text-green-600">+{totalPnLPct.toFixed(2)}% since inception</p>
+            <div className="text-3xl font-bold text-positive">+Rp {(totalPnL / 1e6).toFixed(1)}M</div>
+            <p className="text-sm text-positive">+{totalPnLPct.toFixed(2)}% since inception</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Daily P&L</CardTitle>
+            <CardTitle className="text-sm text-muted">Daily P&L</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">--</div>
-            <p className="text-sm text-muted-foreground">Requires daily price feed</p>
+            <div className="text-3xl font-bold text-positive">--</div>
+            <p className="text-sm text-muted">Requires daily price feed</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Positions</CardTitle>
+            <CardTitle className="text-sm text-muted">Positions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{positions.length}</div>
-            <p className="text-sm text-muted-foreground">Active holdings</p>
+            <p className="text-sm text-muted">Active holdings</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Sectors</CardTitle>
+            <CardTitle className="text-sm text-muted">Sectors</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{sectorData.length}</div>
-            <p className="text-sm text-muted-foreground">Diversified sectors</p>
+            <p className="text-sm text-muted">Diversified sectors</p>
           </CardContent>
         </Card>
       </div>
@@ -228,19 +228,19 @@ export default function PortfolioPage() {
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4">
           {/* Sector Allocation & Top Holdings */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">Sector Allocation</CardTitle>
+                <CardTitle className="text-sm">Sector Allocation</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {sectorData.map((item) => (
                     <div key={item.sector} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        <div className="w-3 h-3 rounded-full bg-info" />
                         <span className="text-sm font-medium">{item.sector}</span>
                       </div>
                       <span className="font-medium">{item.pct.toFixed(1)}%</span>
@@ -252,7 +252,7 @@ export default function PortfolioPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">Top Holdings</CardTitle>
+                <CardTitle className="text-sm">Top Holdings</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -263,7 +263,7 @@ export default function PortfolioPage() {
                       <div key={holding.ticker} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                         <div className="flex items-center gap-3">
                           <span className="font-medium">{holding.ticker}</span>
-                          <span className="text-sm text-muted-foreground">{holding.name}</span>
+                          <span className="text-sm text-muted">{holding.name}</span>
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="font-medium">{(holding.marketValue / totalValue * 100).toFixed(1)}%</span>
@@ -281,29 +281,29 @@ export default function PortfolioPage() {
           {/* Risk Metrics */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Risk Metrics</CardTitle>
+              <CardTitle className="text-sm">Risk Metrics</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="p-4 bg-elevated-panel/50 rounded-md">
                   <p className="text-2xl font-bold">--</p>
-                  <p className="text-sm text-muted-foreground">Portfolio Volatility</p>
-                  <p className="text-xs text-muted-foreground">Annualized (requires history)</p>
+                  <p className="text-sm text-muted">Portfolio Volatility</p>
+                  <p className="text-xs text-muted">Annualized (requires history)</p>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="p-4 bg-elevated-panel/50 rounded-md">
                   <p className="text-2xl font-bold">--</p>
-                  <p className="text-sm text-muted-foreground">Portfolio Beta</p>
-                  <p className="text-xs text-muted-foreground">vs IHSG (requires history)</p>
+                  <p className="text-sm text-muted">Portfolio Beta</p>
+                  <p className="text-xs text-muted">vs IHSG (requires history)</p>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="p-4 bg-elevated-panel/50 rounded-md">
                   <p className="text-2xl font-bold">--</p>
-                  <p className="text-sm text-muted-foreground">VaR 95%</p>
-                  <p className="text-xs text-muted-foreground">1-day (requires history)</p>
+                  <p className="text-sm text-muted">VaR 95%</p>
+                  <p className="text-xs text-muted">1-day (requires history)</p>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="p-4 bg-elevated-panel/50 rounded-md">
                   <p className="text-2xl font-bold">--</p>
-                  <p className="text-sm text-muted-foreground">Max Drawdown</p>
-                  <p className="text-xs text-muted-foreground">Historical (requires history)</p>
+                  <p className="text-sm text-muted">Max Drawdown</p>
+                  <p className="text-xs text-muted">Historical (requires history)</p>
                 </div>
               </div>
             </CardContent>
@@ -312,10 +312,10 @@ export default function PortfolioPage() {
           {/* Correlation Matrix Placeholder */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Correlation Matrix</CardTitle>
+              <CardTitle className="text-sm">Correlation Matrix</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-muted/30 rounded-lg flex items-center justify-center text-muted-foreground">
+              <div className="h-64 bg-elevated-panel/30 rounded-md flex items-center justify-center text-muted">
                 [Correlation Matrix - Requires historical price data]
               </div>
             </CardContent>
@@ -325,7 +325,7 @@ export default function PortfolioPage() {
         <TabsContent value="holdings" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Holdings Detail</CardTitle>
+              <CardTitle className="text-sm">Holdings Detail</CardTitle>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm">
                   <Download className="mr-2 h-4 w-4" />
@@ -360,10 +360,10 @@ export default function PortfolioPage() {
                         <TableCell className="text-right">{holding.currentPrice.toLocaleString()}</TableCell>
                         <TableCell className="text-right font-medium">{holding.marketValue.toLocaleString()}</TableCell>
                         <TableCell className="text-right">{(holding.avgPrice * holding.quantity).toLocaleString()}</TableCell>
-                        <TableCell className={`text-right font-medium ${holding.pnl >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <TableCell className={`text-right font-medium ${holding.pnl >= 0 ? "text-positive" : "text-negative"}`}>
                           {holding.pnl >= 0 ? "+" : ""}{holding.pnl.toLocaleString()}
                         </TableCell>
-                        <TableCell className={`text-right font-medium ${holding.pnlPct >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <TableCell className={`text-right font-medium ${holding.pnlPct >= 0 ? "text-positive" : "text-negative"}`}>
                           {holding.pnlPct >= 0 ? "+" : ""}{holding.pnlPct.toFixed(2)}%
                         </TableCell>
                         <TableCell className="text-right font-medium">{(holding.marketValue / totalValue * 100).toFixed(1)}%</TableCell>
@@ -379,10 +379,10 @@ export default function PortfolioPage() {
         <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Performance</CardTitle>
+              <CardTitle className="text-sm">Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted">
                 Performance analytics require historical price data.
                 <br />
                 <span className="text-sm">Connect a price history feed to enable this tab.</span>
@@ -393,42 +393,42 @@ export default function PortfolioPage() {
 
         <TabsContent value="risk" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-muted/50">
+            <Card className="bg-elevated-panel/50">
               <CardContent className="p-4">
-                <p className="text-2xl font-bold text-blue-600">--</p>
-                <p className="text-sm text-muted-foreground">Portfolio Volatility</p>
-                <p className="text-xs text-muted-foreground">Annualized</p>
+                <p className="text-2xl font-bold text-info">--</p>
+                <p className="text-sm text-muted">Portfolio Volatility</p>
+                <p className="text-xs text-muted">Annualized</p>
               </CardContent>
             </Card>
-            <Card className="bg-muted/50">
+            <Card className="bg-elevated-panel/50">
               <CardContent className="p-4">
-                <p className="text-2xl font-bold text-blue-600">--</p>
-                <p className="text-sm text-muted-foreground">Portfolio Beta</p>
-                <p className="text-xs text-muted-foreground">vs IHSG</p>
+                <p className="text-2xl font-bold text-info">--</p>
+                <p className="text-sm text-muted">Portfolio Beta</p>
+                <p className="text-xs text-muted">vs IHSG</p>
               </CardContent>
             </Card>
-            <Card className="bg-muted/50">
+            <Card className="bg-elevated-panel/50">
               <CardContent className="p-4">
-                <p className="text-2xl font-bold text-red-600">--</p>
-                <p className="text-sm text-muted-foreground">VaR 95% (1-day)</p>
-                <p className="text-xs text-muted-foreground">1-day</p>
+                <p className="text-2xl font-bold text-negative">--</p>
+                <p className="text-sm text-muted">VaR 95% (1-day)</p>
+                <p className="text-xs text-muted">1-day</p>
               </CardContent>
             </Card>
-            <Card className="bg-muted/50">
+            <Card className="bg-elevated-panel/50">
               <CardContent className="p-4">
-                <p className="text-2xl font-bold text-red-600">--</p>
-                <p className="text-sm text-muted-foreground">Max Drawdown</p>
-                <p className="text-xs text-muted-foreground">Historical</p>
+                <p className="text-2xl font-bold text-negative">--</p>
+                <p className="text-sm text-muted">Max Drawdown</p>
+                <p className="text-xs text-muted">Historical</p>
               </CardContent>
             </Card>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Correlation Matrix</CardTitle>
+              <CardTitle className="text-sm">Correlation Matrix</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-muted/30 rounded-lg flex items-center justify-center text-muted-foreground">
+              <div className="h-64 bg-elevated-panel/30 rounded-md flex items-center justify-center text-muted">
                 [Correlation Matrix - Requires historical price data]
               </div>
             </CardContent>
@@ -438,10 +438,10 @@ export default function PortfolioPage() {
         <TabsContent value="attribution" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Factor Attribution</CardTitle>
+              <CardTitle className="text-sm">Factor Attribution</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted">
                 Factor attribution requires historical returns data.
                 <br />
                 <span className="text-sm">Connect a price history feed to enable this tab.</span>
@@ -453,14 +453,14 @@ export default function PortfolioPage() {
         <TabsContent value="transactions" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Transaction History</CardTitle>
+              <CardTitle className="text-sm">Transaction History</CardTitle>
               <Button variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
                 Export CSV
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted">
                 Transaction history requires a transactions table in the database.
                 <br />
                 <span className="text-sm">This feature will be available when transaction logging is implemented.</span>

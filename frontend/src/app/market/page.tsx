@@ -1,20 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Loader2,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  BarChart2,
-  Target,
-  AlertTriangle,
-  Clock,
-  Zap,
-  Eye,
-  ExternalLink,
-  Download,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,13 +57,14 @@ function fmtPct(v: number | null | undefined): string {
 function MoverTable({ title, items }: { title: string; items: MoverItem[] }) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+        <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">#</TableHead>
               <TableHead>Ticker</TableHead>
               <TableHead className="w-24">Price</TableHead>
               <TableHead className="w-24">Change</TableHead>
@@ -86,13 +73,14 @@ function MoverTable({ title, items }: { title: string; items: MoverItem[] }) {
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableCell colSpan={4} className="text-muted text-center py-4">
                   No data yet
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((item) => (
+              items.map((item, idx) => (
                 <TableRow key={item.ticker}>
+                  <TableCell className="font-mono text-xs">{idx + 1}</TableCell>
                   <TableCell className="font-medium">{item.ticker}</TableCell>
                   <TableCell>{fmtNum(item.price)}</TableCell>
                   <TableCell>
@@ -111,13 +99,13 @@ function MoverTable({ title, items }: { title: string; items: MoverItem[] }) {
 function SectorTable({ sectors }: { sectors: SectorPerformance[] }) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base">Sector Performance</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+        <CardTitle className="text-sm">Sector Performance</CardTitle>
         <Badge variant="outline" className="text-xs">
           {sectors.length} sectors
         </Badge>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -135,9 +123,10 @@ function SectorTable({ sectors }: { sectors: SectorPerformance[] }) {
                       sector.sector_score >= 80
                         ? "success"
                         : sector.sector_score >= 60
-                          ? "default"
-                          : "destructive"
+                        ? "secondary"
+                        : "destructive"
                     }
+                    className="text-xs"
                   >
                     {fmtNum(sector.sector_score, 1)}
                   </Badge>
@@ -205,8 +194,11 @@ export default function MarketPage() {
 
   if (state.status === "loading") {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center h-64 text-muted">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm">Loading market data...</span>
+        </div>
       </div>
     );
   }
@@ -217,7 +209,7 @@ export default function MarketPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Failed to load market data</p>
-            <p className="text-sm text-muted-foreground">{state.message}</p>
+            <p className="text-sm text-muted">{state.message}</p>
             <Button className="mt-4" onClick={() => void refresh()}>
               Retry
             </Button>
@@ -233,9 +225,9 @@ export default function MarketPage() {
   const breadth = data.breadth.breadth_score;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted">
           {data.asof ? `As of ${data.asof}` : "No scan data yet"}
         </p>
         <Button
@@ -248,171 +240,158 @@ export default function MarketPage() {
         </Button>
       </div>
 
-      {/* Market Header */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Market Header - 4 compact cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              IHSG Index
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-xs text-muted">IHSG Index</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <div className="text-2xl font-bold tabular-nums">
               {fmtNum(data.macro?.support ?? 0)}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Regime: <Badge variant={regimeVariant}>{regime}</Badge>
+            <p className="text-xs text-muted flex items-center gap-1.5">
+              Regime:
+              <Badge variant={regimeVariant} className="text-xs">
+                {regime}
+              </Badge>
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              Market Breadth
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-xs text-muted">Market Breadth</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{fmtNum(breadth, 1)}</div>
-            <p className="text-sm text-muted-foreground">Breadth Score</p>
+            <p className="text-2xl font-bold tabular-nums">{fmtNum(breadth, 1)}</p>
+            <p className="text-xs text-muted">Breadth Score</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              Regime Confidence
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-xs text-muted">Regime Conf.</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <p className="text-2xl font-bold tabular-nums">
+              {fmtNum(data.regime.confidence, 0)}%
+            </p>
+            <p className="text-xs text-muted">Confidence</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-xs text-muted">Top Opps</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold tabular-nums">
+              {data.top_opportunities.length}
+            </p>
+            <p className="text-xs text-muted">Stocks ranked</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Grid: Regime, Breadth, Top Opportunities */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Market Regime */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-sm">Market Regime</CardTitle>
+            <Badge variant={regimeVariant} className="text-xs">
+              {regime}
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tabular-nums">
               {fmtNum(data.regime.confidence, 0)}%
             </div>
-            <p className="text-sm text-muted-foreground">Confidence</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              Top Opportunities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {data.top_opportunities.length}
+            <p className="text-xs text-muted">Confidence</p>
+            <div className="mt-3 space-y-1.5 text-xs">
+              {Object.entries(data.regime.components).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="capitalize text-muted">{key.replace(/_/g, " ")}</span>
+                  <span className="font-medium tabular-nums">
+                    {typeof value === "number" ? fmtNum(value, 1) : "--"}
+                  </span>
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-muted-foreground">Stocks ranked</p>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Market Regime */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Market Regime</CardTitle>
-              <Badge variant={regimeVariant} className="text-xs">
-                {regime}
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {fmtNum(data.regime.confidence, 0)}%
-              </div>
-              <p className="text-sm text-muted-foreground">Confidence</p>
-              <div className="mt-4 space-y-2 text-sm">
-                {Object.entries(data.regime.components).map(([key, value]) => (
-                  <div key={key} className="flex justify-between">
-                    <span className="capitalize">
-                      {key.replaceAll(/_/g, " ")}
-                    </span>
-                    <span className="font-medium">
-                      {typeof value === "number" ? fmtNum(value, 1) : "--"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Market Breadth */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Market Breadth</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{fmtNum(breadth, 1)}</div>
-              <p className="text-sm text-muted-foreground">Breadth Score</p>
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Top opportunities</span>
-                  <span className="font-medium">
-                    {data.top_opportunities.length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Gainers</span>
-                  <span className="font-medium text-green-600">
-                    {data.top_gainers.length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Losers</span>
-                  <span className="font-medium text-red-600">
-                    {data.top_losers.length}
-                  </span>
-                </div>
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-sm">Market Breadth</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tabular-nums">{fmtNum(breadth, 1)}</div>
+            <p className="text-xs text-muted">Breadth Score</p>
+            <div className="mt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted">Top opportunities</span>
+                <span className="font-medium tabular-nums">
+                  {data.top_opportunities.length}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Gainers</span>
+                <span className="font-medium text-positive tabular-nums">
+                  {data.top_gainers.length}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Losers</span>
+                <span className="font-medium text-negative tabular-nums">
+                  {data.top_losers.length}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Top Opportunities */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Top Opportunities</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
+        <Card className="lg:col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-sm">Top Opportunities</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8">#</TableHead>
+                  <TableHead>Ticker</TableHead>
+                  <TableHead className="w-20">Score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.top_opportunities.length === 0 ? (
                   <TableRow>
-                    <TableHead className="w-10">#</TableHead>
-                    <TableHead>Ticker</TableHead>
-                    <TableHead className="w-20">Score</TableHead>
+                    <TableCell colSpan={3} className="text-muted text-center py-4">
+                      No scan yet
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.top_opportunities.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-muted-foreground">
-                        No scan yet
+                ) : (
+                  data.top_opportunities.map((item, idx) => (
+                    <TableRow key={item.ticker}>
+                      <TableCell className="font-mono text-xs">{idx + 1}</TableCell>
+                      <TableCell className="font-medium">{item.ticker}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {fmtNum(item.opportunity_score, 1)}
+                        </Badge>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    data.top_opportunities.map((item, idx) => (
-                      <TableRow key={item.ticker}>
-                        <TableCell className="font-medium">{idx + 1}</TableCell>
-                        <TableCell className="font-medium">
-                          {item.ticker}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="default">
-                            {fmtNum(item.opportunity_score, 1)}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>{" "}
-          </Card>
-        </div>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Top Gainers / Losers */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <MoverTable title="Top Gainers" items={data.top_gainers} />
         <MoverTable title="Top Losers" items={data.top_losers} />
       </div>
@@ -421,27 +400,27 @@ export default function MarketPage() {
       <SectorTable sectors={sectors} />
 
       {/* Macro Risk/Support */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Macro Risk</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-sm">Macro Risk</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">
+            <p className="text-2xl font-bold text-negative tabular-nums">
               {fmtNum(data.macro?.risk ?? 0, 1)}
-            </div>
-            <p className="text-sm text-muted-foreground">Risk Score</p>
+            </p>
+            <p className="text-xs text-muted">Risk Score</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Macro Support</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-sm">Macro Support</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-positive tabular-nums">
               {fmtNum(data.macro?.support ?? 0, 1)}
-            </div>
-            <p className="text-sm text-muted-foreground">Support Score</p>
+            </p>
+            <p className="text-xs text-muted">Support Score</p>
           </CardContent>
         </Card>
       </div>

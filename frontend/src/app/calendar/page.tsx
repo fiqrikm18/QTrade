@@ -67,9 +67,9 @@ export default function CalendarPage() {
 
   if (state.status === "loading") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </div>
     );
@@ -77,12 +77,12 @@ export default function CalendarPage() {
 
   if (state.status === "error") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <AlertTriangle className="h-12 w-12 text-red-600" />
+          <AlertTriangle className="h-12 w-12 text-negative" />
           <div className="ml-4">
-            <h2 className="text-xl font-bold">Failed to load calendar data</h2>
-            <p className="text-muted-foreground">{state.message}</p>
+            <h2 className="text-base font-semibold">Failed to load calendar data</h2>
+            <p className="text-muted">{state.message}</p>
           </div>
         </div>
       </div>
@@ -90,11 +90,11 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Economic Calendar</h1>
-          <p className="text-muted-foreground">Track global economic events and their market impact</p>
+          <h1 className="text-lg font-semibold">Economic Calendar</h1>
+          <p className="text-muted">Track global economic events and their market impact</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setView("month")} className="mr-2">
@@ -122,7 +122,7 @@ export default function CalendarPage() {
           </Button>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-4">
           <Select value={filterImpact} onValueChange={(val) => setFilterImpact(val as "all" | "HIGH" | "MEDIUM" | "LOW")}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="All Impact" />
@@ -153,7 +153,7 @@ export default function CalendarPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Economic Events ({filteredEvents.length} events)</CardTitle>
+          <CardTitle className="text-sm">Economic Events ({filteredEvents.length} events)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -173,7 +173,7 @@ export default function CalendarPage() {
               </TableHeader>
               <TableBody>
                 {filteredEvents.map((event, index) => (
-                  <TableRow key={index} className="hover:bg-muted/50">
+                  <TableRow key={index} className="hover:bg-elevated-panel/50">
                     <TableCell className="font-mono text-xs">{formatDate(event.date)}</TableCell>
                     <TableCell className="font-mono text-xs">{event.time}</TableCell>
                     <TableCell className="text-center text-sm">
@@ -184,14 +184,14 @@ export default function CalendarPage() {
                     </TableCell>
                     <TableCell className="font-medium">{event.event}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={getImpactColor(event.impact) as "destructive" | "warning" | "secondary"} className="text-xs">
+                      <Badge variant={getImpactColor(event.impact) as "destructive" | "warning" | "secondary"} className="text-[10px]">
                         {event.impact}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">{event.prev}</TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">{event.consensus}</TableCell>
+                    <TableCell className="text-right text-sm text-muted">{event.prev}</TableCell>
+                    <TableCell className="text-right text-sm text-muted">{event.consensus}</TableCell>
                     <TableCell className="text-right text-sm font-medium">{event.actual}</TableCell>
-                    <TableCell className="text-center text-sm text-muted-foreground capitalize">{event.category.toLowerCase()}</TableCell>
+                    <TableCell className="text-center text-sm text-muted capitalize">{event.category.toLowerCase()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

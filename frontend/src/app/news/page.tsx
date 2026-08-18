@@ -54,11 +54,11 @@ export default function NewsPage() {
   const sentimentClass = (sentiment: NewsItem["sentiment"]): string => {
     switch (sentiment) {
       case "POSITIVE":
-        return "bg-green-100 text-green-800"
+        return "bg-positive/10 text-positive border-positive/40"
       case "NEGATIVE":
-        return "bg-red-100 text-red-800"
+        return "bg-negative/10 text-negative border-negative/40"
       case "NEUTRAL":
-        return "bg-gray-100 text-gray-800"
+        return "bg-neutral/10 text-neutral border-neutral/40"
     }
   }
 
@@ -78,9 +78,9 @@ export default function NewsPage() {
 
   if (state.status === "loading") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </div>
     );
@@ -88,11 +88,11 @@ export default function NewsPage() {
 
   if (state.status === "error") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Failed to load news</p>
-            <p className="text-sm text-muted-foreground">{state.message}</p>
+            <p className="text-sm text-muted">{state.message}</p>
           </CardContent>
         </Card>
       </div>
@@ -100,11 +100,11 @@ export default function NewsPage() {
   }
 
   return (
-    <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-bold">Financial News</h1>
-            <p className="text-muted-foreground">Real-time financial news and market-moving events</p>
+            <h1 className="text-lg font-semibold">Financial News</h1>
+            <p className="text-muted">Real-time financial news and market-moving events</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
@@ -118,14 +118,14 @@ export default function NewsPage() {
           </div>
         </div>
 
-        <Card className="mb-6">
+        <Card className="mb-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Filters</CardTitle>
+            <CardTitle className="text-sm">Filters</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Category</label>
+                <label className="block text-xs font-medium text-muted mb-1">Category</label>
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All Categories" />
@@ -140,7 +140,7 @@ export default function NewsPage() {
                 </Select>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Source</label>
+                <label className="block text-xs font-medium text-muted mb-1">Source</label>
                 <Select value={filterSource} onValueChange={setFilterSource}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All Sources" />
@@ -155,7 +155,7 @@ export default function NewsPage() {
                 </Select>
               </div>
               <div className="flex-1 min-w-[150px]">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Impact</label>
+                <label className="block text-xs font-medium text-muted mb-1">Impact</label>
                 <Select value={filterImpact} onValueChange={(v) => setFilterImpact(v as "all" | NewsItem["impact"])}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All Impact" />
@@ -169,9 +169,9 @@ export default function NewsPage() {
                 </Select>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Search</label>
+                <label className="block text-xs font-medium text-muted mb-1">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
                   <Input
                     className="pl-8"
                     placeholder="Search news..."
@@ -186,7 +186,7 @@ export default function NewsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Latest News ({filteredNews.length} articles)</CardTitle>
+            <CardTitle className="text-sm">Latest News ({filteredNews.length} articles)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">

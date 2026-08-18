@@ -134,11 +134,11 @@ export default function DataQualityPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Data Quality Monitor</h1>
-          <p className="text-muted-foreground">Monitor and maintain data integrity across all sources</p>
+          <h1 className="text-lg font-semibold">Data Quality Monitor</h1>
+          <p className="text-muted">Monitor and maintain data integrity across all sources</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => {}}>
@@ -160,15 +160,15 @@ export default function DataQualityPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Tickers</p>
+                <p className="text-sm text-muted">Total Tickers</p>
                 <p className="text-3xl font-bold">{totalTickers}</p>
               </div>
-              <Database className="h-8 w-8 text-muted-foreground/30" />
+              <Database className="h-8 w-8 text-muted/30" />
             </div>
           </CardContent>
         </Card>
@@ -176,10 +176,10 @@ export default function DataQualityPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Fresh</p>
-                <p className="text-3xl font-bold text-green-600">{freshCount}</p>
+                <p className="text-sm text-muted">Fresh</p>
+                <p className="text-3xl font-bold text-positive">{freshCount}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500/30" />
+              <CheckCircle className="h-8 w-8 text-positive/30" />
             </div>
           </CardContent>
         </Card>
@@ -187,10 +187,10 @@ export default function DataQualityPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Stale</p>
-                <p className="text-3xl font-bold text-yellow-600">{staleCount}</p>
+                <p className="text-sm text-muted">Stale</p>
+                <p className="text-3xl font-bold text-warning">{staleCount}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-500/30" />
+              <AlertTriangle className="h-8 w-8 text-warning/30" />
             </div>
           </CardContent>
         </Card>
@@ -198,10 +198,10 @@ export default function DataQualityPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Errors</p>
-                <p className="text-3xl font-bold text-red-600">{errorCount}</p>
+                <p className="text-sm text-muted">Errors</p>
+                <p className="text-3xl font-bold text-negative">{errorCount}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-red-500/30" />
+              <AlertCircle className="h-8 w-8 text-negative/30" />
             </div>
           </CardContent>
         </Card>
@@ -215,11 +215,11 @@ export default function DataQualityPage() {
           <TabsTrigger value="tickers">Ticker Quality</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Quality Score Distribution</CardTitle>
+                <CardTitle className="text-sm">Quality Score Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -231,12 +231,12 @@ export default function DataQualityPage() {
                           style={{
                             backgroundColor:
                               metric.status === "excellent"
-                                ? "#22c55e"
+                                ? "#22C55E"
                                 : metric.status === "good"
-                                ? "#3b82f6"
+                                ? "#38BDF8"
                                 : metric.status === "fair"
-                                ? "#f59e0b"
-                                : "#ef4444",
+                                ? "#F59E0B"
+                                : "#EF4444",
                           }}
                         />
                         <span className="text-sm font-medium">{metric.name || metric.metric}</span>
@@ -253,7 +253,7 @@ export default function DataQualityPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Data Freshness Status</CardTitle>
+                <CardTitle className="text-sm">Data Freshness Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -263,12 +263,12 @@ export default function DataQualityPage() {
                         <div
                           className="w-3 h-3 rounded-full"
                           style={{
-                            backgroundColor: item.status === "fresh" ? "#22c55e" : "#ef4444",
+                            backgroundColor: item.status === "fresh" ? "#22C55E" : "#EF4444",
                           }}
                         />
                         <span className="font-medium font-mono text-sm">{item.table}</span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 text-sm text-muted">
                         <span className="font-mono">{item.rows.toLocaleString()} rows</span>
                         <span>{item.cadence}</span>
                         <Badge variant={item.status === "fresh" ? "success" : "warning"}>
@@ -286,7 +286,7 @@ export default function DataQualityPage() {
         <TabsContent value="issues" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Data Quality Issues</CardTitle>
+              <CardTitle className="text-sm">Data Quality Issues</CardTitle>
               <div className="flex items-center gap-2">
                 <Select value="all" onValueChange={() => {}}>
                   <SelectTrigger className="w-36">
@@ -359,7 +359,7 @@ export default function DataQualityPage() {
         <TabsContent value="freshness" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Data Freshness</CardTitle>
+              <CardTitle className="text-sm">Data Freshness</CardTitle>
               <Button variant="outline" size="sm">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh All
@@ -411,7 +411,7 @@ export default function DataQualityPage() {
         <TabsContent value="tickers" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base">Per-Ticker Quality</CardTitle>
+              <CardTitle className="text-sm">Per-Ticker Quality</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">

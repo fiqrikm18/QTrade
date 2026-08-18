@@ -137,16 +137,16 @@ export default function BacktestPage() {
   };
 
   const metricCards = [
-    { label: "CAGR", value: "18.5%", color: "text-green-600" },
-    { label: "Sharpe", value: "1.34", color: "text-blue-600" },
-    { label: "Sortino", value: "1.89", color: "text-purple-600" },
-    { label: "Max DD", value: "-14.2%", color: "text-red-600" },
-    { label: "Calmar", value: "1.30", color: "text-blue-600" },
-    { label: "Win Rate", value: "58.3%", color: "text-green-600" },
-    { label: "Profit Factor", value: "2.14", color: "text-blue-600" },
-    { label: "Expectancy", value: "2.45", color: "text-green-600" },
-    { label: "Avg Hold", value: "28 days", color: "text-muted-foreground" },
-    { label: "Turnover", value: "1.45x", color: "text-muted-foreground" },
+    { label: "CAGR", value: "18.5%", color: "text-positive" },
+    { label: "Sharpe", value: "1.34", color: "text-info" },
+    { label: "Sortino", value: "1.89", color: "text-accent" },
+    { label: "Max DD", value: "-14.2%", color: "text-negative" },
+    { label: "Calmar", value: "1.30", color: "text-info" },
+    { label: "Win Rate", value: "58.3%", color: "text-positive" },
+    { label: "Profit Factor", value: "2.14", color: "text-info" },
+    { label: "Expectancy", value: "2.45", color: "text-positive" },
+    { label: "Avg Hold", value: "28 days", color: "text-muted" },
+    { label: "Turnover", value: "1.45x", color: "text-muted" },
   ];
 
   const tradeLogData = [
@@ -218,11 +218,11 @@ export default function BacktestPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Backtesting Lab</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-semibold">Backtesting Lab</h1>
+          <p className="text-muted">
             Test and validate quantitative strategies on historical data
           </p>
         </div>
@@ -238,10 +238,10 @@ export default function BacktestPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Strategy</CardTitle>
+            <CardTitle className="text-sm text-muted">Strategy</CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={activeStrategy} onValueChange={setActiveStrategy}>
@@ -256,7 +256,7 @@ export default function BacktestPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted mt-2">
               {strategies.find((s) => s.id === activeStrategy)?.description}
             </p>
           </CardContent>
@@ -264,18 +264,18 @@ export default function BacktestPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Period</CardTitle>
+            <CardTitle className="text-sm text-muted">Period</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">
+                <label className="block text-xs text-muted mb-1">
                   Start Date
                 </label>
                 <Input type="date" defaultValue="2022-01-01" className="h-9" />
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">
+                <label className="block text-xs text-muted mb-1">
                   End Date
                 </label>
                 <Input type="date" defaultValue="2024-12-31" className="h-9" />
@@ -286,7 +286,7 @@ export default function BacktestPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Universe</CardTitle>
+            <CardTitle className="text-sm text-muted">Universe</CardTitle>
           </CardHeader>
           <CardContent>
             <Select defaultValue="idx_all">
@@ -300,18 +300,18 @@ export default function BacktestPage() {
                 <SelectItem value="custom">Custom Watchlist</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-1">~800 stocks</p>
+            <p className="text-xs text-muted mt-1">~800 stocks</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Capital</CardTitle>
+            <CardTitle className="text-sm text-muted">Capital</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
               <Input type="number" defaultValue="1000000000" className="w-32" />
-              <span className="text-muted-foreground">IDR</span>
+              <span className="text-muted">IDR</span>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <label className="flex items-center gap-1 text-sm">
@@ -327,7 +327,7 @@ export default function BacktestPage() {
         </Card>
       </div>
 
-<div className="flex justify-end gap-2 mb-6">
+<div className="flex justify-end gap-2 mb-4">
         <Button
           variant="outline"
           size="lg"
@@ -361,7 +361,7 @@ export default function BacktestPage() {
 
       {state.status === "loading" && (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       )}
 
@@ -369,7 +369,7 @@ export default function BacktestPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Failed to run backtest</p>
-            <p className="text-sm text-muted-foreground">{state.message}</p>
+            <p className="text-sm text-muted">{state.message}</p>
             <Button className="mt-4" onClick={runBacktestHandler}>
               Retry
             </Button>
@@ -383,33 +383,33 @@ export default function BacktestPage() {
         const trades = data.trades || [];
         
         const metricCards = [
-          { label: "CAGR", value: `${(metrics.cagr ?? 0).toFixed(1)}%`, color: "text-green-600" },
-          { label: "Sharpe", value: (metrics.sharpe ?? 0).toFixed(2), color: "text-blue-600" },
-          { label: "Sortino", value: (metrics.sortino ?? 0).toFixed(2), color: "text-purple-600" },
-          { label: "Max DD", value: `${(metrics.max_drawdown ?? metrics.maxDD ?? 0).toFixed(1)}%`, color: "text-red-600" },
-          { label: "Calmar", value: (metrics.calmar ?? 0).toFixed(2), color: "text-blue-600" },
-          { label: "Win Rate", value: `${(metrics.win_rate ?? metrics.winRate ?? 0).toFixed(1)}%`, color: "text-green-600" },
-          { label: "Profit Factor", value: (metrics.profit_factor ?? metrics.profitFactor ?? 0).toFixed(2), color: "text-blue-600" },
-          { label: "Expectancy", value: (metrics.expectancy ?? 0).toFixed(2), color: "text-green-600" },
-          { label: "Avg Hold", value: `${metrics.avg_hold ?? metrics.avgHold ?? 0} days`, color: "text-muted-foreground" },
-          { label: "Turnover", value: `${(metrics.turnover ?? 0).toFixed(2)}x`, color: "text-muted-foreground" },
+          { label: "CAGR", value: `${(metrics.cagr ?? 0).toFixed(1)}%`, color: "text-positive" },
+          { label: "Sharpe", value: (metrics.sharpe ?? 0).toFixed(2), color: "text-info" },
+          { label: "Sortino", value: (metrics.sortino ?? 0).toFixed(2), color: "text-accent" },
+          { label: "Max DD", value: `${(metrics.max_drawdown ?? metrics.maxDD ?? 0).toFixed(1)}%`, color: "text-negative" },
+          { label: "Calmar", value: (metrics.calmar ?? 0).toFixed(2), color: "text-info" },
+          { label: "Win Rate", value: `${(metrics.win_rate ?? metrics.winRate ?? 0).toFixed(1)}%`, color: "text-positive" },
+          { label: "Profit Factor", value: (metrics.profit_factor ?? metrics.profitFactor ?? 0).toFixed(2), color: "text-info" },
+          { label: "Expectancy", value: (metrics.expectancy ?? 0).toFixed(2), color: "text-positive" },
+          { label: "Avg Hold", value: `${metrics.avg_hold ?? metrics.avgHold ?? 0} days`, color: "text-muted" },
+          { label: "Turnover", value: `${(metrics.turnover ?? 0).toFixed(2)}x`, color: "text-muted" },
         ];
 
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold mb-4">Performance Metrics</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {metricCards.map((metric) => (
-                  <Card key={metric.label} className="bg-muted/50">
+                  <Card key={metric.label} className="bg-elevated-panel/50">
                     <CardContent className="p-4">
                       <p
-                        className="text-2xl font-bold"
+                        className="text-lg font-semibold"
                         style={{ color: metric.color }}
                       >
                         {metric.value}
                       </p>
-                      <p className="text-sm text-muted-foreground">{metric.label}</p>
+                      <p className="text-sm text-muted">{metric.label}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -420,14 +420,14 @@ export default function BacktestPage() {
               <h2 className="text-lg font-semibold mb-4">Equity Curve</h2>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Equity Curve</CardTitle>
+                  <CardTitle className="text-sm">Equity Curve</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80 bg-muted/30 rounded-lg flex items-center justify-center text-muted-foreground">
+                  <div className="h-80 bg-elevated-panel/30 rounded-md flex items-center justify-center text-muted">
                     [Equity Curve Chart - Integrate Recharts or Chart.js]
                     <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Equity Curve</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted">Equity Curve</p>
+                      <p className="text-xs text-muted">
                         {metrics.equity_curve ? `Points: ${metrics.equity_curve.length}` : 'No equity curve data'}
                       </p>
                     </div>
@@ -440,17 +440,17 @@ export default function BacktestPage() {
               <h2 className="text-lg font-semibold mb-4">Drawdown</h2>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Drawdown Chart</CardTitle>
+                  <CardTitle className="text-sm">Drawdown Chart</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80 bg-muted/30 rounded-lg flex items-center justify-center text-muted-foreground">
+                  <div className="h-80 bg-elevated-panel/30 rounded-md flex items-center justify-center text-muted">
                     [Drawdown Chart - Peak to Valley]
                     <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Max DD: {(metrics.max_drawdown ?? metrics.maxDD ?? 0).toFixed(1)}%</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted">Max DD: {(metrics.max_drawdown ?? metrics.maxDD ?? 0).toFixed(1)}%</p>
+                      <p className="text-xs text-muted">
                         Avg DD Duration: {metrics.avg_dd_duration ?? 'N/A'} days
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted">
                         Recovery Time: {metrics.recovery_time ?? 'N/A'} days avg
                       </p>
                     </div>
@@ -463,7 +463,7 @@ export default function BacktestPage() {
               <h2 className="text-lg font-semibold mb-4">Trade Log</h2>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base">Trade Log</CardTitle>
+                  <CardTitle className="text-sm">Trade Log</CardTitle>
                   <Button variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
                     Export CSV
@@ -505,7 +505,7 @@ export default function BacktestPage() {
                             </TableCell>
                             <TableCell
                               className={`text-right font-medium ${
-                                (trade.pnl ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+                                (trade.pnl ?? 0) >= 0 ? "text-positive" : "text-negative"
                               }`}
                             >
                               {(trade.pnl ?? 0) >= 0 ? "+" : ""}{(trade.pnl ?? 0).toLocaleString()}
@@ -531,7 +531,7 @@ export default function BacktestPage() {
               <h2 className="text-lg font-semibold mb-4">Monthly Returns</h2>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Monthly Returns</CardTitle>
+                  <CardTitle className="text-sm">Monthly Returns</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -551,7 +551,7 @@ export default function BacktestPage() {
                             <TableCell className="font-medium">{m.month}</TableCell>
                             <TableCell className="text-center">{m.portfolio >= 0 ? "+" : ""}{m.portfolio.toFixed(2)}%</TableCell>
                             <TableCell className="text-center">{m.benchmark >= 0 ? "+" : ""}{m.benchmark.toFixed(2)}%</TableCell>
-                            <TableCell className={`text-center font-medium ${m.excess >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            <TableCell className={`text-center font-medium ${m.excess >= 0 ? "text-positive" : "text-negative"}`}>
                               {m.excess >= 0 ? "+" : ""}{m.excess.toFixed(2)}%
                             </TableCell>
                             <TableCell className="text-center font-medium">{m.cumulative >= 0 ? "+" : ""}{m.cumulative.toFixed(2)}%</TableCell>

@@ -10,6 +10,7 @@ def register_routes(app: FastAPI) -> None:
         alerts,
         backtests,
         calendar,
+        data_quality,
         llm,
         macro,
         market,
@@ -33,5 +34,8 @@ def register_routes(app: FastAPI) -> None:
     router.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])
     router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
     router.include_router(research.router, prefix="/research", tags=["research"])
+    router.include_router(
+        data_quality.router, prefix="/data-quality", tags=["data-quality"]
+    )
 
     app.include_router(router)

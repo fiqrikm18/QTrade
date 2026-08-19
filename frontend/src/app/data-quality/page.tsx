@@ -1,453 +1,292 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Database,
-  AlertTriangle,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  RefreshCw,
-  Download,
-  Settings,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  GitCompare,
-  Shield,
-  Search,
-  Filter,
-  Clock,
-  BarChart3,
-  FileText,
-  Tag,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { RefreshCw, AlertCircle, Clock, Database, TrendingUp, Calendar, Newspaper, FileText, Zap } from "lucide-react";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { getDataQuality, type DataQualityReport } from "@/lib/api";
+
+type DomainKey = "ohlcv" | "macro" | "calendar" | "news" | "fundamentals" | "technical_features";
+
+interface DomainInfo {
+  key: DomainKey;
+  label: string;
+  icon: React.ReactNode;
+  getCount: (report: DataQualityReport) => number;
+  getCountLabel: (report: DataQualityReport) => string;
+  getGaps?: (report: DataQualityReport) => string[];
+}
+
+const DOMAINS: DomainInfo[] = [
+  {
+    key: "ohlcv",
+    label: "OHLCV",
+    icon: <Database className="h-4 w-4" />,
+    getCount: (r) => r.ohlcv.row_count,
+    getCountLabel: (r) => `${r.ohlcv.tickers} tickers`,
+    getGaps: (r) => r.ohlcv.gaps,
+  },
+  {
+    key: "macro",
+    label: "Macro",
+    icon: <TrendingUp className="h-4 w-4" />,
+    getCount: (r) => r.macro.row_count,
+    getCountLabel: (r) => `${r.macro.indicators} indicators`,
+  },
+  {
+    key: "calendar",
+    label: "Calendar",
+    icon: <Calendar className="h-4 w-4" />,
+    getCount: (r) => r.calendar.row_count,
+    getCountLabel: (r) => `${r.calendar.events} events`,
+  },
+  {
+    key: "news",
+    label: "News",
+    icon: <Newspaper className="h-4 w-4" />,
+    getCount: (r) => r.news.row_count,
+    getCountLabel: (r) => `${r.news.articles} articles`,
+  },
+  {
+    key: "fundamentals",
+    label: "Fundamentals",
+    icon: <FileText className="h-4 w-4" />,
+    getCount: (r) => r.fundamentals.row_count,
+    getCountLabel: (r) => `${r.fundamentals.tickers} tickers`,
+  },
+  {
+    key: "technical_features",
+    label: "Technical Features",
+    icon: <Zap className="h-4 w-4" />,
+    getCount: (r) => r.technical_features.row_count,
+    getCountLabel: (r) => `${r.technical_features.tickers} tickers`,
+  },
+];
+
+type LoadState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; data: DataQualityReport };
+
+function formatLastUpdate(lastUpdate: string | null): string {
+  if (!lastUpdate) return "Never";
+  try {
+    return new Date(lastUpdate).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return lastUpdate;
+  }
+}
+
+function getFreshness(lastUpdate: string | null): "fresh" | "stale" | "old" {
+  if (!lastUpdate) return "old";
+  const diffMs = Date.now() - new Date(lastUpdate).getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  if (diffHours < 1) return "fresh";
+  if (diffHours < 24) return "stale";
+  return "old";
+}
+
+function getFreshnessBadge(freshness: "fresh" | "stale" | "old") {
+  switch (freshness) {
+    case "fresh":
+      return <Badge variant="success" className="text-[10px]">Fresh</Badge>;
+    case "stale":
+      return <Badge variant="warning" className="text-[10px]">Stale</Badge>;
+    case "old":
+      return <Badge variant="destructive" className="text-[10px]">Old</Badge>;
+  }
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString("en-US");
+}
 
 export default function DataQualityPage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [refreshing, setRefreshing] = useState(false);
 
-  const qualityMetrics = [
-    { name: "Market Data", score: 99, status: "excellent", issues: 2, lastUpdate: "2024-01-15 09:24:31" },
-    { metric: "Fundamentals", score: 96, status: "good", issues: 8, lastUpdate: "2024-01-14 16:20:15" },
-    { metric: "Corporate Actions", score: 100, status: "excellent", issues: 0, lastUpdate: "2024-01-15 06:00:00" },
-    { metric: "Macro", score: 98, status: "excellent", issues: 1, lastUpdate: "2024-01-15 08:30:00" },
-    { metric: "News", score: 97, status: "good", issues: 3, lastUpdate: "2024-01-15 09:15:00" },
-  ];
-
-  const issues = [
-    { id: 1, table: "ohlcv_daily", ticker: "BBCA", issue: "Missing trading day", severity: "medium", detected: "2024-01-15 09:00:00", status: "open" },
-    { id: 2, table: "ohlcv_daily", ticker: "TLKM", issue: "Negative volume", severity: "high", detected: "2024-01-15 09:00:00", status: "in_progress" },
-    { id: 3, table: "financial_statements", ticker: "ASII", issue: "Missing Q4 2023 report", severity: "medium", detected: "2024-01-14 16:20:00", status: "open" },
-    { id: 4, table: "ohlcv_daily", ticker: "BBRI", issue: "Duplicate row", severity: "low", detected: "2024-01-15 09:00:00", status: "resolved" },
-    { id: 5, table: "financial_ratios", ticker: "BMRI", issue: "Stale data (3 days old)", severity: "medium", detected: "2024-01-15 09:00:00", status: "in_progress" },
-    { id: 6, table: "ohlcv_daily", ticker: "TLKM", issue: "Price gap > 10%", severity: "high", detected: "2024-01-14 16:20:00", status: "in_progress" },
-  ];
-
-  const freshnessData = [
-    { table: "ohlcv_daily", lastUpdate: "2024-01-15 09:24:31", maxDate: "2024-01-12", rows: 48000, cadence: "Daily (15:50 WIB)", status: "fresh" },
-    { table: "financial_statements", lastUpdate: "2024-01-14 16:20:00", maxDate: "2023-12-31", rows: 12000, cadence: "Quarterly", status: "stale" },
-    { table: "corporate_actions", lastUpdate: "2024-01-15 06:00:00", maxDate: "2024-01-15", rows: 1200, cadence: "Daily", status: "fresh" },
-    { table: "economic_indicators", lastUpdate: "2024-01-15 08:30:00", maxDate: "2024-01-12", rows: 500, cadence: "Daily", status: "fresh" },
-    { table: "economic_events", lastUpdate: "2024-01-15 06:00:00", maxDate: "2024-01-31", rows: 450, cadence: "Daily", status: "fresh" },
-    { table: "news", lastUpdate: "2024-01-15 09:15:00", maxDate: "2024-01-15", rows: 2500, cadence: "15 min", status: "fresh" },
-  ];
-
-  const tickerQualityData = [
-    { ticker: "BBCA", lastBarDate: "2024-01-12", gaps: 1, nulls: 0, status: "fresh" },
-    { ticker: "TLKM", lastBarDate: "2024-01-12", gaps: 2, nulls: 1, status: "stale" },
-    { ticker: "ASII", lastBarDate: "2024-01-12", gaps: 0, nulls: 0, status: "fresh" },
-    { ticker: "BBRI", lastBarDate: "2024-01-12", gaps: 0, nulls: 0, status: "fresh" },
-    { ticker: "BMRI", lastBarDate: "2024-01-11", gaps: 3, nulls: 2, status: "stale" },
-  ];
-
-  const totalTickers = 5;
-  const freshCount = freshnessData.filter((f) => f.status === "fresh").length;
-  const staleCount = freshnessData.filter((f) => f.status === "stale").length;
-  const errorCount = issues.filter((i) => i.severity === "high").length;
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "excellent":
-        return <Badge variant="success">Excellent</Badge>;
-      case "good":
-        return <Badge variant="default">Good</Badge>;
-      case "fair":
-        return <Badge variant="warning">Fair</Badge>;
-      case "poor":
-        return <Badge variant="destructive">Poor</Badge>;
-      case "fresh":
-        return <Badge variant="success">Fresh</Badge>;
-      case "stale":
-        return <Badge variant="warning">Stale</Badge>;
-      case "open":
-        return <Badge variant="destructive">Open</Badge>;
-      case "in_progress":
-        return <Badge variant="warning">In Progress</Badge>;
-      case "resolved":
-        return <Badge variant="success">Resolved</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
+  async function fetchData() {
+    try {
+      setState({ status: "loading" });
+      const data = await getDataQuality();
+      setState({ status: "ready", data });
+    } catch (err) {
+      setState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Failed to load data quality report",
+      });
     }
-  };
+  }
 
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case "high":
-        return <Badge variant="destructive">High</Badge>;
-      case "medium":
-        return <Badge variant="warning">Medium</Badge>;
-      case "low":
-        return <Badge variant="secondary">Low</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
+  useEffect(() => {
+    let cancelled = false;
+    async function initialLoad() {
+      try {
+        const data = await getDataQuality();
+        if (!cancelled) setState({ status: "ready", data });
+      } catch (err) {
+        if (!cancelled) {
+          setState({
+            status: "error",
+            message: err instanceof Error ? err.message : "Failed to load data quality report",
+          });
+        }
+      }
     }
-  };
+    void initialLoad();
+    return () => { cancelled = true; };
+  }, []);
 
-  const getIssueStatusBadge = (status: string) => {
-    switch (status) {
-      case "open":
-        return <Badge variant="destructive">Open</Badge>;
-      case "in_progress":
-        return <Badge variant="warning">In Progress</Badge>;
-      case "resolved":
-        return <Badge variant="success">Resolved</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
+  async function refresh() {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }
+
+  const renderSkeleton = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {DOMAINS.map((domain) => (
+        <Card key={domain.key}>
+          <CardContent className="p-4">
+            <LoadingSkeleton variant="card" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderError = (message: string) => (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <AlertCircle className="h-10 w-10 text-negative" aria-hidden="true" />
+            <p className="text-sm font-medium">Failed to load data quality report</p>
+            <p className="text-xs text-muted max-w-sm">{message}</p>
+            <Button variant="outline" size="sm" onClick={fetchData} className="gap-1">
+              <RefreshCw className="h-3 w-3" aria-hidden="true" />
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderEmpty = () => (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="py-12">
+          <EmptyState
+            title="No data quality data available"
+            description="No data quality report found in the database."
+            icon="database"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  if (state.status === "loading") {
+    return <div className="space-y-4">{renderSkeleton()}</div>;
+  }
+
+  if (state.status === "error") {
+    return <div className="space-y-4">{renderError(state.message)}</div>;
+  }
+
+  const { data } = state;
+
+  const hasData = DOMAINS.some((domain) => {
+    const domainData = data[domain.key];
+    return domainData && (domainData.row_count > 0 || (domainData.last_update && domainData.last_update !== "null"));
+  });
+
+  if (!hasData) {
+    return <div className="space-y-4">{renderEmpty()}</div>;
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Data Quality Monitor</h1>
-          <p className="text-muted">Monitor and maintain data integrity across all sources</p>
+          <h1 className="text-lg font-semibold">Data Quality Report</h1>
+          <p className="text-xs text-muted">Monitor data freshness and completeness across all domains</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => {}}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh All
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
-          </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Button>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Check
+          {data.asof && (
+            <div className="flex items-center gap-1 text-xs text-muted">
+              <Clock className="h-3 w-3" aria-hidden="true" />
+              <span>As of {new Date(data.asof).toLocaleTimeString()}</span>
+            </div>
+          )}
+          <Button variant="outline" size="sm" disabled={refreshing} onClick={() => void refresh()}>
+            <RefreshCw className="mr-2 h-3 w-3" aria-hidden="true" />
+            {refreshing ? "Refreshing..." : "Refresh"}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted">Total Tickers</p>
-                <p className="text-3xl font-bold">{totalTickers}</p>
-              </div>
-              <Database className="h-8 w-8 text-muted/30" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted">Fresh</p>
-                <p className="text-3xl font-bold text-positive">{freshCount}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-positive/30" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted">Stale</p>
-                <p className="text-3xl font-bold text-warning">{staleCount}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-warning/30" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted">Errors</p>
-                <p className="text-3xl font-bold text-negative">{errorCount}</p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-negative/30" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {DOMAINS.map((domain) => {
+          const domainData = data[domain.key];
+          const freshness = getFreshness(domainData.last_update);
+          const gaps = domain.getGaps?.(data) ?? [];
 
-      <Tabs defaultValue="overview" onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="issues">Issues</TabsTrigger>
-          <TabsTrigger value="freshness">Freshness</TabsTrigger>
-          <TabsTrigger value="tickers">Ticker Quality</TabsTrigger>
-        </TabsList>
+          return (
+            <Card key={domain.key}>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded bg-accent/50 text-accent">{domain.icon}</span>
+                    <CardTitle className="text-sm">{domain.label}</CardTitle>
+                  </div>
+                  {getFreshnessBadge(freshness)}
+                </div>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Quality Score Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {qualityMetrics.map((metric) => (
-                    <div key={metric.name || metric.metric} className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              metric.status === "excellent"
-                                ? "#22C55E"
-                                : metric.status === "good"
-                                ? "#38BDF8"
-                                : metric.status === "fair"
-                                ? "#F59E0B"
-                                : "#EF4444",
-                          }}
-                        />
-                        <span className="text-sm font-medium">{metric.name || metric.metric}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-lg">{metric.score}</span>
-                        {getStatusBadge(metric.status)}
-                      </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Last Updated</span>
+                    <span className="font-mono font-medium flex items-center gap-1">
+                      <Clock className="h-3 w-3" aria-hidden="true" />
+                      {formatLastUpdate(domainData.last_update)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Rows</span>
+                    <span className="font-mono font-medium tabular-nums">{formatNumber(domain.getCount(data))}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">{domain.getCountLabel(data).split(" ")[1] || "Count"}</span>
+                    <span className="font-mono font-medium tabular-nums">{domain.getCountLabel(data)}</span>
+                  </div>
+                  {gaps.length > 0 && (
+                    <div className="flex items-start justify-between border-t border-border pt-2">
+                      <span className="text-muted">Gaps</span>
+                      <span className="font-mono text-xs text-muted max-w-[60%] truncate">{gaps.join(", ")}</span>
                     </div>
-                  ))}
+                  )}
+                  {gaps.length === 0 && domain.getGaps && (
+                    <div className="flex items-center justify-between border-t border-border pt-2">
+                      <span className="text-muted">Gaps</span>
+                      <span className="font-mono text-xs text-muted">None</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Data Freshness Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {freshnessData.map((item) => (
-                    <div key={item.table} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor: item.status === "fresh" ? "#22C55E" : "#EF4444",
-                          }}
-                        />
-                        <span className="font-medium font-mono text-sm">{item.table}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted">
-                        <span className="font-mono">{item.rows.toLocaleString()} rows</span>
-                        <span>{item.cadence}</span>
-                        <Badge variant={item.status === "fresh" ? "success" : "warning"}>
-                          {item.status === "fresh" ? "Fresh" : "Stale"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-</CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="issues" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Data Quality Issues</CardTitle>
-              <div className="flex items-center gap-2">
-                <Select value="all" onValueChange={() => {}}>
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="All Severity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Severity</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value="all" onValueChange={() => {}}>
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">#</TableHead>
-                      <TableHead>Table</TableHead>
-                      <TableHead>Ticker</TableHead>
-                      <TableHead>Issue</TableHead>
-                      <TableHead className="w-24">Severity</TableHead>
-                      <TableHead className="w-32">Detected</TableHead>
-                      <TableHead className="w-24">Status</TableHead>
-                      <TableHead className="w-24">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {issues.map((issue) => (
-                      <TableRow key={issue.id}>
-                        <TableCell className="font-mono text-xs">{issue.id}</TableCell>
-                        <TableCell>{issue.table}</TableCell>
-                        <TableCell className="font-mono">{issue.ticker}</TableCell>
-                        <TableCell className="max-w-xs truncate">{issue.issue}</TableCell>
-                        <TableCell>{getSeverityBadge(issue.severity)}</TableCell>
-                        <TableCell className="font-mono text-xs">{issue.detected}</TableCell>
-                        <TableCell>{getIssueStatusBadge(issue.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="freshness" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Data Freshness</CardTitle>
-              <Button variant="outline" size="sm">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh All
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Table</TableHead>
-                      <TableHead className="w-40">Last Updated</TableHead>
-                      <TableHead className="w-28">Max Date</TableHead>
-                      <TableHead className="w-20">Rows</TableHead>
-                      <TableHead className="w-32">Cadence</TableHead>
-                      <TableHead className="w-24">Status</TableHead>
-                      <TableHead className="w-24">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {freshnessData.map((item) => (
-                      <TableRow key={item.table}>
-                        <TableCell className="font-mono text-sm">{item.table}</TableCell>
-                        <TableCell className="font-mono text-xs">{item.lastUpdate}</TableCell>
-                        <TableCell className="font-mono text-xs">{item.maxDate}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{item.rows.toLocaleString()}</TableCell>
-                        <TableCell>{item.cadence}</TableCell>
-                        <TableCell>
-                          {item.status === "fresh" ? (
-                            <Badge variant="success">Fresh</Badge>
-                          ) : (
-                            <Badge variant="warning">Stale</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Refresh">
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="tickers" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Per-Ticker Quality</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Ticker</TableHead>
-                      <TableHead className="w-32">Last Bar Date</TableHead>
-                      <TableHead className="w-20"># Gaps</TableHead>
-                      <TableHead className="w-20"># Nulls</TableHead>
-                      <TableHead className="w-24">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tickerQualityData.map((item) => (
-                      <TableRow key={item.ticker}>
-                        <TableCell className="font-mono font-medium">{item.ticker}</TableCell>
-                        <TableCell className="font-mono text-xs">{item.lastBarDate}</TableCell>
-                        <TableCell className="text-center font-mono">{item.gaps}</TableCell>
-                        <TableCell className="text-center font-mono">{item.nulls}</TableCell>
-                        <TableCell>
-                          {item.status === "fresh" ? (
-                            <Badge variant="success">Fresh</Badge>
-                          ) : (
-                            <Badge variant="warning">Stale</Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          );
+        })}
+      </div>
     </div>
   );
 }

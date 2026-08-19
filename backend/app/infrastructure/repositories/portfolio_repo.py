@@ -53,35 +53,30 @@ class PortfolioRepository:
                     .limit(1)
                 )
             ).first()
-            current_price = (
-                float(price_row[0]) if price_row and price_row[0] is not None else None
-            )
+            if price_row and price_row[0] is not None:
+                current_price = float(price_row[0])
+            else:
+                current_price = float(position.avg_price)
             quantity = float(position.quantity)
             avg_price = float(position.avg_price)
+            market_value = round(current_price * quantity, 2)
             entry = {
                 "ticker": position.ticker,
                 "name": name,
                 "quantity": quantity,
                 "avgPrice": avg_price,
                 "currentPrice": current_price,
-                "marketValue": round(current_price * quantity, 2)
-                if current_price is not None
-                else None,
-                "pnl": round((current_price - avg_price) * quantity, 2)
-                if current_price is not None
-                else None,
-                "pnlPct": round((current_price - avg_price) / avg_price * 100, 2)
-                if current_price is not None
-                else None,
+                "marketValue": market_value,
+                "pnl": round((current_price - avg_price) * quantity, 2),
+                "pnlPct": round((current_price - avg_price) / avg_price * 100, 2),
             }
             enriched.append(entry)
-            if current_price is not None:
-                total_value += Decimal(str(entry["marketValue"]))
+            total_value += Decimal(str(market_value))
         for entry in enriched:
             entry["weight"] = (
                 round(float(entry["marketValue"]) / float(total_value) * 100, 2)
-                if entry["marketValue"] is not None and total_value > 0
-                else None
+                if total_value > 0
+                else 0.0
             )
         return enriched
 

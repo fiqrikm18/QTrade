@@ -4,19 +4,12 @@ from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import get_settings
-from app.infrastructure.database.models import (
-    EconomicEvent,
-    EconomicIndicator,
-    FinancialStatement,
-    NewsArticle,
-    OhlcvDaily,
-    StockScore,
-)
 from app.infrastructure.database.session import get_session
+from app.infrastructure.repositories.checkpoint_repo import CheckpointRepository
 from app.interfaces.workers.jobs import get_queue
 
 router = APIRouter()
@@ -30,6 +23,23 @@ def _market_open(now: datetime) -> bool:
     if now.weekday() >= 5:
         return False
     return time(9, 0) <= now.time() <= time(15, 50)
+
+
+async def _db_healthy(session: AsyncSession) -> bool:
+    try:
+        await session.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        return False
+
+
+async def _redis_healthy() -> bool:
+    try:
+        queue = get_queue()
+        queue.connection.ping()
+        return True
+    except Exception:
+        return False
 
 
 @router.get("/status", response_model=dict[str, object])
@@ -47,26 +57,28 @@ async def system_status(
     except Exception:
         jobs_running = None
 
-    latest_ohlcv = await session.scalar(select(func.max(OhlcvDaily.trade_date)))
-    latest_macro = await session.scalar(select(func.max(EconomicIndicator.asof_date)))
-    latest_news = await session.scalar(select(func.max(NewsArticle.published_at)))
-    latest_fund = await session.scalar(
-        select(func.max(FinancialStatement.available_at))
-    )
-    latest_scan = await session.scalar(select(func.max(StockScore.asof_date)))
-    latest_event = await session.scalar(select(func.max(EconomicEvent.scheduled_at)))
+    checkpoints = CheckpointRepository(session)
+    ohlcv_wm = await checkpoints.get("ingest_ohlcv_daily")
+    macro_wm = await checkpoints.get("ingest_macro")
+    calendar_wm = await checkpoints.get("ingest_calendar")
+    news_wm = await checkpoints.get("ingest_news")
+    fundamentals_wm = await checkpoints.get("ingest_fundamentals")
+
+    db_status = "healthy" if await _db_healthy(session) else "unhealthy"
+    redis_status = "healthy" if await _redis_healthy() else "unhealthy"
 
     return {
         "market_open": _market_open(now),
         "provider": settings.market_data_provider,
         "llm_enabled": settings.llm_enabled,
+        "db_status": db_status,
+        "redis_status": redis_status,
         "jobs_running": jobs_running,
         "data_freshness": {
-            "ohlcv": latest_ohlcv.isoformat() if latest_ohlcv else None,
-            "macro": latest_macro.isoformat() if latest_macro else None,
-            "news": latest_news.isoformat() if latest_news else None,
-            "fundamentals": latest_fund.isoformat() if latest_fund else None,
-            "latest_scan": latest_scan.isoformat() if latest_scan else None,
-            "latest_event": latest_event.isoformat() if latest_event else None,
+            "ohlcv": ohlcv_wm.isoformat() if ohlcv_wm else None,
+            "macro": macro_wm.isoformat() if macro_wm else None,
+            "news": news_wm.isoformat() if news_wm else None,
+            "fundamentals": fundamentals_wm.isoformat() if fundamentals_wm else None,
+            "latest_scan": calendar_wm.isoformat() if calendar_wm else None,
         },
     }

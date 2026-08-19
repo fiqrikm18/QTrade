@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
     models_dir: str = "./models"
     market_data_provider: str = "yfinance"
+    macro_provider: str = "bi_fred"
+    news_provider: str = "rss"
+    fundamental_provider: str = "yfinance"
+    ingest_macro_cron: str = "0 18 * * *"
+    ingest_calendar_cron: str = "0 6 * * *"
+    ingest_news_cron: str = "*/15 * * * *"
+    ingest_fundamentals_cron: str = "0 17 * * *"
     ingest_cron: str = "15 16 * * 1-5"
     watchdog_cron: str = "*/30 * * * *"
 

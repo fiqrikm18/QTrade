@@ -118,13 +118,13 @@ def _find_date(payload: Any) -> date | None:
 class BiProvider(MacroEconomicProvider, EconomicCalendarProvider):
     """BI-sourced macro indicators + economic calendar (keyless)."""
 
-    _SUPPORTED_CODES = {"usd_idr", "bi_rate"}
+    SUPPORTED_CODES = {"usd_idr", "bi_rate"}
 
     def __init__(self, client: httpx.Client | None = None) -> None:
         self._client = client or httpx.Client(timeout=30.0)
 
     def get_indicators(self, codes: list[str], start: date, end: date) -> pl.DataFrame:
-        unknown = set(codes) - self._SUPPORTED_CODES
+        unknown = set(codes) - self.SUPPORTED_CODES
         if unknown:
             raise ProviderError(
                 f"code(s) not supported by BiProvider: {sorted(unknown)}"

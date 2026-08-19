@@ -17,6 +17,10 @@ from apscheduler.triggers.cron import (  # pyright: ignore[reportMissingTypeStub
 from app.config.settings import get_settings
 from app.interfaces.workers.jobs import (
     get_queue,
+    ingest_calendar,
+    ingest_fundamentals,
+    ingest_macro,
+    ingest_news,
     ingest_ohlcv_daily,
     watchdog,
 )
@@ -31,11 +35,31 @@ __all__ = [
 ]
 
 _JOB_INGEST = "ingest_ohlcv_daily"
+_JOB_MACRO = "ingest_macro"
+_JOB_CALENDAR = "ingest_calendar"
+_JOB_NEWS = "ingest_news"
+_JOB_FUNDAMENTALS = "ingest_fundamentals"
 _JOB_WATCHDOG = "watchdog"
 
 
 def _enqueue_daily() -> None:
     get_queue().enqueue(ingest_ohlcv_daily)  # type: ignore[reportUnknownMemberType]
+
+
+def _enqueue_macro() -> None:
+    get_queue().enqueue(ingest_macro)  # type: ignore[reportUnknownMemberType]
+
+
+def _enqueue_calendar() -> None:
+    get_queue().enqueue(ingest_calendar)  # type: ignore[reportUnknownMemberType]
+
+
+def _enqueue_news() -> None:
+    get_queue().enqueue(ingest_news)  # type: ignore[reportUnknownMemberType]
+
+
+def _enqueue_fundamentals() -> None:
+    get_queue().enqueue(ingest_fundamentals)  # type: ignore[reportUnknownMemberType]
 
 
 def _enqueue_watchdog() -> None:
@@ -48,6 +72,26 @@ def schedule_jobs(scheduler: BackgroundScheduler) -> None:
         _enqueue_daily,
         CronTrigger.from_crontab(settings.ingest_cron),  # type: ignore[reportUnknownMemberType]
         id=_JOB_INGEST,
+    )
+    scheduler.add_job(  # type: ignore[reportUnknownMemberType]
+        _enqueue_macro,
+        CronTrigger.from_crontab(settings.ingest_macro_cron),  # type: ignore[reportUnknownMemberType]
+        id=_JOB_MACRO,
+    )
+    scheduler.add_job(  # type: ignore[reportUnknownMemberType]
+        _enqueue_calendar,
+        CronTrigger.from_crontab(settings.ingest_calendar_cron),  # type: ignore[reportUnknownMemberType]
+        id=_JOB_CALENDAR,
+    )
+    scheduler.add_job(  # type: ignore[reportUnknownMemberType]
+        _enqueue_news,
+        CronTrigger.from_crontab(settings.ingest_news_cron),  # type: ignore[reportUnknownMemberType]
+        id=_JOB_NEWS,
+    )
+    scheduler.add_job(  # type: ignore[reportUnknownMemberType]
+        _enqueue_fundamentals,
+        CronTrigger.from_crontab(settings.ingest_fundamentals_cron),  # type: ignore[reportUnknownMemberType]
+        id=_JOB_FUNDAMENTALS,
     )
     scheduler.add_job(  # type: ignore[reportUnknownMemberType]
         _enqueue_watchdog,

@@ -6,20 +6,33 @@ via ``asyncio.run``.
 
 import asyncio
 import logging
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import cast
 
+import polars as pl
 import redis
 from rq import Queue
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.application.services.market_data import ingest_ohlcv
 from app.config.settings import get_settings
-from app.infrastructure.database.models import Stock
+from app.infrastructure.database.models import FinancialStatement, Stock
 from app.infrastructure.database.session import get_session
+from app.infrastructure.providers.factory import (
+    build_fundamentals_provider,
+    build_macro_provider,
+    build_news_provider,
+)
+from app.infrastructure.repositories.checkpoint_repo import CheckpointRepository
+from app.infrastructure.repositories.macro_repo import MacroRepository
+from app.infrastructure.repositories.news_repo import NewsRepository
 
 logger = logging.getLogger("app.workers")
 
 _DEFAULT_QUEUE = "default"
+
+_MACRO_CODES = ["usd_idr", "bi_rate", "idn_10y", "us_10y", "dxy", "sp500"]
 
 
 def get_queue() -> Queue:
@@ -51,6 +64,119 @@ def ingest_ohlcv_daily() -> int:
     return asyncio.run(_ingest_all())
 
 
+def _macro_frame(start: date, end: date) -> pl.DataFrame:
+    provider, _calendar = build_macro_provider()
+    return provider.get_indicators(_MACRO_CODES, start, end)
+
+
+def _calendar_frame(start: date, end: date) -> pl.DataFrame:
+    _macro, calendar = build_macro_provider()
+    return calendar.get_calendar(start, end)
+
+
+def _news_frame(since: datetime) -> pl.DataFrame:
+    provider = build_news_provider()
+    return provider.get_news(None, since)
+
+
+def ingest_macro() -> int:
+    return asyncio.run(_ingest_macro())
+
+
+async def _ingest_macro() -> int:
+    async for session in get_session():
+        checkpoints = CheckpointRepository(session)
+        repo = MacroRepository(session)
+        now = datetime.now(UTC)
+        watermark = await checkpoints.get("ingest_macro") or now - timedelta(days=30)
+        start = watermark.date() - timedelta(days=2)  # overlap window
+        df = _macro_frame(start, date.today())
+        written = await repo.upsert_indicators(df)
+        # Monotonic: never move the watermark backward (clock skew / reruns).
+        await checkpoints.set("ingest_macro", max(now, watermark))
+        return written
+    return 0
+
+
+def ingest_calendar() -> int:
+    return asyncio.run(_ingest_calendar())
+
+
+async def _ingest_calendar() -> int:
+    async for session in get_session():
+        checkpoints = CheckpointRepository(session)
+        repo = MacroRepository(session)
+        now = datetime.now(UTC)
+        watermark = await checkpoints.get("ingest_calendar") or now - timedelta(days=30)
+        start = watermark.date() - timedelta(days=2)
+        end = start + timedelta(days=45)
+        df = _calendar_frame(start, end)
+        written = await repo.upsert_events(df)
+        await checkpoints.set("ingest_calendar", max(now, watermark))
+        return written
+    return 0
+
+
+def ingest_news() -> int:
+    return asyncio.run(_ingest_news())
+
+
+async def _ingest_news() -> int:
+    async for session in get_session():
+        checkpoints = CheckpointRepository(session)
+        repo = NewsRepository(session)
+        now = datetime.now(UTC)
+        watermark = await checkpoints.get("ingest_news") or now - timedelta(hours=3)
+        since = watermark - timedelta(hours=1)  # overlap window
+        df = _news_frame(since)
+        written = await repo.upsert_news(df)
+        await checkpoints.set("ingest_news", max(now, watermark))
+        return written
+    return 0
+
+
+def ingest_fundamentals() -> int:
+    return asyncio.run(_ingest_fundamentals())
+
+
+async def _ingest_fundamentals() -> int:
+    provider = build_fundamentals_provider()
+    total = 0
+    async for session in get_session():
+        tickers: list[str] = list(
+            (await session.execute(select(Stock.ticker))).scalars().all()
+        )
+        for ticker in tickers:
+            try:
+                snapshot = provider.get_latest_fundamentals(ticker)
+                period_end = date.fromisoformat(str(snapshot["period_end"]))
+                items = cast(dict[str, float], snapshot["items"])
+                stmt = pg_insert(FinancialStatement).values(
+                    {
+                        "ticker": ticker,
+                        "asof_date": period_end,
+                        "available_at": datetime.now(UTC),
+                        "reported_at": date.fromisoformat(str(snapshot["reported_at"])),
+                        "period_end": period_end,
+                        "is_annual": True,
+                        "items": items,
+                    }
+                )
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["ticker", "asof_date", "available_at"],
+                    set_={"items": stmt.excluded["items"]},
+                )
+                result = await session.execute(stmt)
+                rc = cast("int | None", getattr(result, "rowcount", None))
+                total += rc or 0
+            except Exception:
+                logger.exception("fundamentals fetch failed for %s", ticker)
+                continue
+        await session.commit()
+        return total
+    return 0
+
+
 def watchdog() -> int:
     logger.info("watchdog: health check ok")
     return 0
@@ -63,6 +189,10 @@ def ping() -> str:
 __all__ = [
     "get_queue",
     "ingest_ohlcv_daily",
+    "ingest_macro",
+    "ingest_calendar",
+    "ingest_news",
+    "ingest_fundamentals",
     "watchdog",
     "ping",
 ]

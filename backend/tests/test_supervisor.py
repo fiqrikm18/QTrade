@@ -23,4 +23,11 @@ def test_schedule_jobs_adds_triggers() -> None:
     scheduler = BackgroundScheduler()
     s.schedule_jobs(scheduler)
     ids = {j.id for j in scheduler.get_jobs()}
-    assert ids == {"ingest_ohlcv_daily", "watchdog"}
+    assert ids == {
+        "ingest_ohlcv_daily",
+        "ingest_macro",
+        "ingest_calendar",
+        "ingest_news",
+        "ingest_fundamentals",
+        "watchdog",
+    }

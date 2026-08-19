@@ -191,7 +191,7 @@ class MacroRepository:
 
     async def indicator_series(
         self, indicator: str, days: int = 30
-    ) -> list[dict[str, object]]:
+    ) -> list[dict[str, date | float]]:
         cutoff = date.today() - timedelta(days=days)
         rows = (
             await self._session.execute(

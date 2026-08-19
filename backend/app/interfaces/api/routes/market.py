@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import get_settings
-from app.infrastructure.database.models import OhlcvDaily, StockScore
+from app.infrastructure.database.models import OhlcvDaily, Sector, Stock, StockScore
 from app.infrastructure.database.session import get_session
 
 router = APIRouter()
@@ -202,6 +202,51 @@ async def market_overview(
         if regime is None
         else date.fromisoformat(regime["asof"])
     )
+
+    # Real sector rotation: average sector_score per sector from the latest scan.
+    sector_rotation: list[dict[str, object]] = []
+    if asof is not None:
+        sector_rows = (
+            await session.execute(
+                select(StockScore.sector_score, Sector.name)
+                .join(Stock, Stock.ticker == StockScore.ticker)
+                .join(Sector, Sector.id == Stock.sector_id)
+                .where(
+                    StockScore.profile == DEFAULT_PROFILE,
+                    StockScore.asof_date == asof,
+                    StockScore.sector_score.is_not(None),
+                )
+            )
+        ).fetchall()
+        by_sector: dict[str, list[float]] = {}
+        for score, name in sector_rows:
+            if name is not None:
+                by_sector.setdefault(name, []).append(float(score))
+        sector_rotation = [
+            {
+                "sector": name,
+                "score": round(sum(vals) / len(vals), 2),
+                "asof": asof.isoformat(),
+            }
+            for name, vals in sorted(
+                by_sector.items(), key=lambda kv: sum(kv[1]) / len(kv[1]), reverse=True
+            )
+        ]
+
+    # Real macro risk/support from ingested indicator series (None = no data yet).
+    from app.domain.macro.scores import compute_macro_scores
+    from app.infrastructure.repositories.macro_repo import MacroRepository
+
+    macro_repo = MacroRepository(session)
+    series: dict[str, list[tuple[date, float]]] = {}
+    for code in ("usd_idr", "dxy", "us_10y", "sp500"):
+        rows = await macro_repo.indicator_series(code, days=30)
+        series[code] = [(r["asof_date"], float(r["value"])) for r in rows]  # type: ignore[assignment]
+    macro_scores = compute_macro_scores(series)
+
+    # Real upcoming events from economic_events.
+    upcoming_events = await macro_repo.upcoming_events(limit=5)
+
     return {
         "regime": regime
         or {"regime": "UNKNOWN", "confidence": 0.0, "components": {}, "asof": None},
@@ -215,9 +260,9 @@ async def market_overview(
             key=lambda m: m["change_pct"],
         )[:_TOP_OPPORTUNITIES],
         "top_opportunities": opportunities,
-        "sector_rotation": [],
-        "macro": {"risk": 0, "support": 0},
-        "upcoming_events": [],
+        "sector_rotation": sector_rotation,
+        "macro": macro_scores,
+        "upcoming_events": upcoming_events,
         "asof": asof.isoformat() if asof else None,
     }
 

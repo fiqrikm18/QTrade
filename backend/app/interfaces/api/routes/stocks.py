@@ -124,7 +124,7 @@ async def stock_analysis(
     if indicators is not None:
         risk_level, regime = derive_stock_risk_regime(indicators)
     else:
-        risk_level, regime = ("UNKNOWN", "UNKNOWN")
+        risk_level, regime = (None, None)
 
     return {
         "ticker": score.ticker,

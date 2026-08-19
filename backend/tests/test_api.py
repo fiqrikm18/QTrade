@@ -17,6 +17,7 @@ from app.infrastructure.database.models import (
     Sector,
     Stock,
     StockScore,
+    TechnicalFeature,
 )
 from app.main import create_app
 
@@ -137,6 +138,104 @@ class TestStockEndpoints:
         assert "drivers" in data
         assert "risks" in data
         assert "invalidation_conditions" in data
+
+    @pytest.fixture
+    async def seed_stock_with_technical_features(self, session):
+        """Seed a stock with technical features for risk/regime testing."""
+        from sqlalchemy import delete
+
+        await session.execute(
+            delete(TechnicalFeature).where(TechnicalFeature.ticker == "BBRI")
+        )
+        await session.execute(delete(StockScore).where(StockScore.ticker == "BBRI"))
+        await session.execute(delete(Stock).where(Stock.ticker == "BBRI"))
+        await session.flush()
+        await session.commit()
+
+        stock = Stock(
+            ticker="BBRI",
+            name="Bank Rakyat Indonesia",
+            listing_date=date(2003, 10, 31),
+            board="Utama",
+            shares_outstanding=15155200000,
+            sector_id=1,
+            is_active=True,
+        )
+        session.add(stock)
+        await session.flush()
+
+        score = StockScore(
+            ticker="BBRI",
+            asof_date=date(2024, 3, 1),
+            profile="balanced",
+            scoring_version="v1",
+            feature_version="v1",
+            opportunity_score=72.3,
+            technical_score=75.0,
+            fundamental_score=80.0,
+            momentum_score=68.0,
+            relative_strength=70.0,
+            smart_money_score=65.0,
+            factor_score=70.0,
+            sector_score=75.0,
+            macro_score=68.0,
+            risk_score=70.0,
+            ml_score=67.0,
+            score_components={
+                "technical": 75.0,
+                "fundamental": 80.0,
+                "momentum": 68.0,
+                "relative_strength": 70.0,
+                "smart_money": 65.0,
+                "factor": 70.0,
+                "sector": 75.0,
+                "macro": 68.0,
+                "risk": 70.0,
+                "ml": 67.0,
+            },
+            classification="WATCH",
+            confidence=65.0,
+            drivers=["Solid fundamentals"],
+            risks=["Margin pressure"],
+            invalidation_conditions=["NPL deterioration"],
+        )
+        session.add(score)
+        await session.flush()
+
+        tech_feature = TechnicalFeature(
+            ticker="BBRI",
+            asof_date=date(2024, 3, 1),
+            feature_version="v1",
+            indicators={
+                "atr_14": 100.0,
+                "atr_14_pct": 0.025,
+                "sma_20": 5200.0,
+                "sma_50": 5100.0,
+                "sma_200": 5000.0,
+                "adx_14": 30.0,
+                "rsi_14": 60.0,
+                "hist_vol_20": 25.0,
+                "close": 5150.0,
+            },
+        )
+        session.add(tech_feature)
+        await session.flush()
+        await session.commit()
+        return stock
+
+    async def test_stock_analysis_risk_regime_from_technical_features(
+        self, client, seed_stock_with_technical_features
+    ):
+        """GET /api/v1/stocks/BBRI/analysis returns correct risk_level
+        and regime from TechnicalFeature."""
+        response = await client.get(f"{BASE_URL}/stocks/BBRI/analysis")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ticker"] == "BBRI"
+        # ATR% = 0.025 -> medium (0.02-0.04)
+        assert data["risk_level"] == "medium"
+        # ADX=30 > 25, SMA alignment 5200 > 5100 > 5000 -> trending_up
+        assert data["regime"] == "trending_up"
 
     async def test_stock_list_returns_paginated(self, client, seed_stock_with_score):
         """GET /api/v1/stocks returns paginated universe."""

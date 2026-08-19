@@ -13,7 +13,7 @@ The response shapes must match the TypeScript contracts in
 ``frontend/src/lib/api.ts`` (AGENTS.md §16).
 """
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import polars as pl
 import pytest
@@ -114,7 +114,7 @@ async def seed_macro(session: AsyncSession):
             }
         )
     )
-    t0 = datetime(2026, 8, 20, 14, 0, tzinfo=UTC)
+    t0 = datetime.now(UTC) + timedelta(days=1)
     await repo.upsert_events(
         pl.DataFrame(
             {

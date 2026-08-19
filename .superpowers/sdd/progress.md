@@ -83,3 +83,13 @@ CP4 checkpoint: PASSED
   - Error handling: timeout/auth/rate-limit/JSON errors → deterministic fallback strings
   - API routes: GET /ml/models, GET /ml/models/{n}/{v}, POST /backtests/run, GET /backtests/{id}
   - pytest 164 passed; ruff clean; pyright 0
+=== Stock universe selection (2026-08-18) ===
+Task 1: complete (commits c5983b7..e6924d3, review clean, approved)
+Task 2: complete (commits e6924d3..dda8b60, review clean, approved; minor: vitest.config.ts __dirname warning pre-existing, triage at final review)
+Task 3: complete (commits dda8b60..c8b9771, review clean, approved; minor: missing EOF newline in ticker-select.tsx, triage at final review)
+Task 4: complete (commits c8b9771..a30ce54, review clean, approved; dashboard quick link fixed in a30ce54; controller-verified no hardcoded ticker links remain; minor: retry double-fetch (plan-mandated), empty-state copy, pagination test breadth, row a11y — triage at final review)
+Task 5: complete (commits a30ce54..dc876f4, review clean, approved; minor: universe-failure hint untested, loose text matcher — triage at final review)
+Task 6: complete (build 18 routes GREEN; E2E: /stocks 200, /stocks/BBCA 200, API 960 stocks via proxy; vitest 22/22; tsc clean; eslint 0 errors / 175 pre-existing warnings)
+Task 6: complete (build 18 routes GREEN; E2E: /stocks 200, /stocks/BBCA 200, API 960 stocks via proxy; vitest 22/22; tsc clean; eslint 0 errors / 175 pre-existing warnings)
+Final review: PASSED with 1 fix (92ad38a — selector now fetches getStocks(1,1000), dead BBCA fallback removed, regression test with 101-item universe; re-review approved). Deferred fast-follows: error+Retry test, universe-hint test, empty-state copy, page-local search note, vitest.config __dirname warning (pre-existing), EOF newline, row a11y.
+Feature complete: commits e6924d3..92ad38a on master.

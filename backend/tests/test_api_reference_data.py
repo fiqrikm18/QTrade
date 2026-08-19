@@ -13,13 +13,23 @@ The response shapes must match the TypeScript contracts in
 ``frontend/src/lib/api.ts`` (AGENTS.md §16).
 """
 
-from datetime import date
+from datetime import UTC, date, datetime
 
+import polars as pl
 import pytest
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.models import Stock, StockScore
+from app.infrastructure.database.models import (
+    EconomicEvent,
+    EconomicIndicator,
+    NewsArticle,
+    NewsEntity,
+    Stock,
+    StockScore,
+)
+from app.infrastructure.repositories.macro_repo import MacroRepository
+from app.infrastructure.repositories.news_repo import NewsRepository
 
 BASE_URL = "/api/v1"
 
@@ -85,16 +95,74 @@ async def seed_stock_with_score(session: AsyncSession):
     return stock
 
 
-class TestMacroEndpoints:
-    """GET /api/v1/macro/indicators (seed reference data)."""
+@pytest.fixture
+async def seed_macro(session: AsyncSession):
+    from sqlalchemy import delete
 
-    async def test_macro_indicators_returns_typed_list(self, client):
+    await session.execute(delete(EconomicEvent))
+    await session.execute(delete(EconomicIndicator))
+    await session.commit()
+    repo = MacroRepository(session)
+    await repo.upsert_indicators(
+        pl.DataFrame(
+            {
+                "indicator": ["BI Rate", "USD/IDR"],
+                "asof_date": [date(2026, 8, 19), date(2026, 8, 19)],
+                "value": [5.75, 17836.0],
+                "unit": ["%", ""],
+                "source": ["BI", "BI"],
+            }
+        )
+    )
+    t0 = datetime(2026, 8, 20, 14, 0, tzinfo=UTC)
+    await repo.upsert_events(
+        pl.DataFrame(
+            {
+                "event": ["BI Rate Decision"],
+                "country": ["ID"],
+                "scheduled_at": [t0],
+                "importance": [3],
+                "category": ["CENTRAL_BANK"],
+                "previous": [5.75],
+                "consensus": [5.75],
+                "actual": [None],
+                "status": ["scheduled"],
+                "source": ["BI"],
+            }
+        )
+    )
+
+
+@pytest.fixture
+async def seed_news(session: AsyncSession):
+    from sqlalchemy import delete
+
+    await session.execute(delete(NewsEntity))
+    await session.execute(delete(NewsArticle))
+    await session.commit()
+    repo = NewsRepository(session)
+    await repo.upsert_news(
+        pl.DataFrame(
+            {
+                "title": ["BBCA posts strong quarterly profit"],
+                "source": ["news.google.com"],
+                "published_at": [datetime(2026, 8, 19, 9, 0, tzinfo=UTC)],
+                "url": ["https://example.com/1"],
+                "summary": ["Bank Central Asia reported results."],
+                "tickers": [["BBCA"]],
+            }
+        )
+    )
+
+
+class TestMacroEndpoints:
+    async def test_macro_indicators_returns_typed_list(self, client, seed_macro):
         response = await client.get(f"{BASE_URL}/macro/indicators")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) > 0
-        item = data[0]
+        assert len(data) == 2
+        item = next(i for i in data if i["indicator"] == "BI Rate")
         for key in (
             "indicator",
             "current",
@@ -106,18 +174,27 @@ class TestMacroEndpoints:
         ):
             assert key in item, f"missing key {key}"
         assert item["trend"] in ("up", "down", "neutral")
-        assert any(i["indicator"] == "BI Rate" for i in data)
+        assert item["current"] == 5.75
+
+    async def test_macro_indicators_empty_without_data(
+        self, client, session: AsyncSession
+    ):
+        from sqlalchemy import delete
+
+        await session.execute(delete(EconomicIndicator))
+        await session.commit()
+        response = await client.get(f"{BASE_URL}/macro/indicators")
+        assert response.status_code == 200
+        assert response.json() == []
 
 
 class TestCalendarEndpoints:
-    """GET /api/v1/calendar/events (seed reference data)."""
-
-    async def test_calendar_events_returns_typed_list(self, client):
+    async def test_calendar_events_returns_typed_list(self, client, seed_macro):
         response = await client.get(f"{BASE_URL}/calendar/events")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) > 0
+        assert len(data) == 1
         item = data[0]
         for key in (
             "date",
@@ -132,21 +209,26 @@ class TestCalendarEndpoints:
         ):
             assert key in item, f"missing key {key}"
         assert item["impact"] in ("HIGH", "MEDIUM", "LOW")
-        # dates must be ISO-parseable (calendar page renders new Date(date))
-        from datetime import datetime
-
+        assert item["actual"] is None  # honest: not released
         datetime.fromisoformat(item["date"])
+
+    async def test_calendar_empty_without_data(self, client, session: AsyncSession):
+        from sqlalchemy import delete
+
+        await session.execute(delete(EconomicEvent))
+        await session.commit()
+        response = await client.get(f"{BASE_URL}/calendar/events")
+        assert response.status_code == 200
+        assert response.json() == []
 
 
 class TestNewsEndpoints:
-    """GET /api/v1/news (seed reference data)."""
-
-    async def test_news_returns_typed_list(self, client):
+    async def test_news_returns_typed_list(self, client, seed_news):
         response = await client.get(f"{BASE_URL}/news")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) > 0
+        assert len(data) == 1
         item = data[0]
         for key in (
             "id",
@@ -161,9 +243,19 @@ class TestNewsEndpoints:
             "summary",
         ):
             assert key in item, f"missing key {key}"
-        assert item["impact"] in ("HIGH", "MEDIUM", "LOW")
-        assert item["sentiment"] in ("POSITIVE", "NEGATIVE", "NEUTRAL")
-        assert isinstance(item["tickers"], list)
+        assert item["impact"] is None  # honest: no fabricated sentiment/impact
+        assert item["sentiment"] is None
+        assert item["tickers"] == ["BBCA"]
+
+    async def test_news_empty_without_data(self, client, session: AsyncSession):
+        from sqlalchemy import delete
+
+        await session.execute(delete(NewsEntity))
+        await session.execute(delete(NewsArticle))
+        await session.commit()
+        response = await client.get(f"{BASE_URL}/news")
+        assert response.status_code == 200
+        assert response.json() == []
 
 
 class TestPortfolioEndpoints:

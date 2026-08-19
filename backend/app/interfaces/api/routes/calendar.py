@@ -1,24 +1,20 @@
-"""Economic calendar API routes.
-
-``GET /api/v1/calendar/events`` serves the curated seed reference dataset
-(``app/domain/reference_data``) until the ``economic_data_ingestion`` job
-(PRD §40) populates the ``economic_events`` table (docs/data-model.md §7).
-
-The path is ``/calendar/events`` to match the frontend contract
-(``frontend/src/lib/api.ts`` → ``getCalendarEvents``), not the PRD's planned
-``/economic-calendar`` path.
-"""
+"""Economic calendar API routes — read from economic_events."""
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.reference_data import CALENDAR_EVENTS
+from app.infrastructure.database.session import get_session
+from app.infrastructure.repositories.macro_repo import MacroRepository
 
 router = APIRouter()
 
 
 @router.get("/events", response_model=list[dict[str, Any]])
-async def calendar_events() -> list[dict[str, Any]]:
-    """Get upcoming economic events (seed reference data)."""
-    return [dict(item) for item in CALENDAR_EVENTS]
+async def calendar_events(
+    limit: int = Query(default=30, ge=1, le=200),
+    session: AsyncSession = Depends(get_session),
+) -> list[dict[str, Any]]:
+    """Get upcoming economic calendar events from the ingested series."""
+    return await MacroRepository(session).upcoming_events(limit=limit)

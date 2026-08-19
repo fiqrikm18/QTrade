@@ -358,6 +358,26 @@ export interface SystemStatus {
   uptime_seconds: number;
 }
 
+export interface BackendSettings {
+  macro_provider: string;
+  news_provider: string;
+  fundamental_provider: string;
+  ingest_macro_cron: string;
+  ingest_news_cron: string;
+  ingest_fundamentals_cron: string;
+  ingest_cron: string;
+  watchdog_cron: string;
+  llm_enabled: boolean;
+  llm_provider: string;
+  llm_model: string;
+  llm_analysis_enabled: boolean;
+  llm_news_summary_enabled: boolean;
+  llm_stock_explanation_enabled: boolean;
+  llm_macro_summary_enabled: boolean;
+  llm_nl_screener_enabled: boolean;
+  llm_research_enabled: boolean;
+}
+
 // Screener Saved Configs
 export interface ScreenerSavedConfig {
   id: string;
@@ -538,6 +558,10 @@ export function getDataQuality(): Promise<DataQualityReport> {
 
 export function getSystemStatus(): Promise<SystemStatus> {
   return request<SystemStatus>("/api/v1/system/status");
+}
+
+export function getSettings(): Promise<BackendSettings> {
+  return request<BackendSettings>("/api/v1/settings");
 }
 
 export function getScreenerSaved(): Promise<ScreenerSavedConfig[]> {

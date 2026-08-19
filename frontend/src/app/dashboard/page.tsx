@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/table";
 import {
   getMarketOverview,
-  getStockAnalysis,
   type MarketOverview,
   type MoverItem,
 } from "@/lib/api";
@@ -103,29 +102,12 @@ function MoverTable({
 
 export default function DashboardPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [bbca, setBbca] = useState<{
-    price: number;
-    changePct: number;
-    score: number;
-    classification: string;
-  } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
     try {
       const data = await getMarketOverview();
       setState({ status: "ready", data });
-      try {
-        const a = await getStockAnalysis("BBCA");
-        setBbca({
-          price: a.price ?? 0,
-          changePct: a.change_pct ?? 0,
-          score: a.opportunity_score ?? 0,
-          classification: a.classification ?? "neutral",
-        });
-      } catch {
-        setBbca(null);
-      }
     } catch (err) {
       setState({
         status: "error",
@@ -141,18 +123,6 @@ export default function DashboardPage() {
         const data = await getMarketOverview();
         if (cancelled) return;
         setState({ status: "ready", data });
-        try {
-          const a = await getStockAnalysis("BBCA");
-          if (cancelled) return;
-          setBbca({
-            price: a.price ?? 0,
-            changePct: a.change_pct ?? 0,
-            score: a.opportunity_score ?? 0,
-            classification: a.classification ?? "neutral",
-          });
-        } catch {
-          if (!cancelled) setBbca(null);
-        }
       } catch (err) {
         if (!cancelled) {
           setState({
@@ -235,10 +205,10 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold tabular-nums">
-                  {bbca ? fmtNum(bbca.price) : "--"}
+                  {fmtNum(data.macro?.support ?? 0)}
                 </p>
                 <p className="text-lg font-bold text-positive tabular-nums">
-                  {bbca ? fmtPct(bbca.changePct) : "--"}
+                  {fmtPct(data.macro?.support ?? 0)}
                 </p>
               </div>
               <div className="flex items-center gap-1.5">
@@ -271,11 +241,13 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-xs text-muted">BBCA Opp.</CardTitle>
+            <CardTitle className="text-xs text-muted">Top Opp.</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold tabular-nums">
-              {bbca ? fmtNum(bbca.score, 1) : "--"}
+              {data.top_opportunities.length > 0
+                ? fmtNum(data.top_opportunities[0].opportunity_score, 1)
+                : "--"}
             </p>
             <p className="text-xs text-muted">Score</p>
           </CardContent>

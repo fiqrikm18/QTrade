@@ -1,115 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  User,
-  Bell,
-  Shield,
-  Palette,
   Database,
-  Globe,
-  Key,
-  Save,
-  RefreshCw,
-  Download,
-  Upload,
-  Moon,
-  Sun,
-  Monitor,
-  Smartphone,
-  Tablet,
-  CreditCard,
-  Mail,
-  Lock,
-  Copy,
-  FileText,
-  Plus,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
+  Zap,
+  Bot,
+  Clock,
+  Info,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { getSettings, type BackendSettings } from "@/lib/api";
 
-type TabValue = "general" | "appearance" | "notifications" | "data" | "advanced";
+type TabValue = "providers" | "schedules" | "llm";
 
-type NotificationSettings = {
-  email: boolean;
-  priceAlerts: boolean;
-  newsAlerts: boolean;
-  portfolioAlerts: boolean;
-  macroAlerts: boolean;
-  push: boolean;
-};
-
-const emailNotificationItems = [
-  { id: "email", label: "Email notifications", desc: "Receive notifications via email" },
-  { id: "priceAlerts", label: "Price alerts", desc: "Price crossing thresholds" },
-  { id: "newsAlerts", label: "News alerts", desc: "Breaking news and announcements" },
-  { id: "portfolioAlerts", label: "Portfolio alerts", desc: "Portfolio value changes" },
-  { id: "macroAlerts", label: "Macro alerts", desc: "Macroeconomic events" },
+const providerItems = [
+  { key: "macro_provider", label: "Macro Provider", desc: "Macroeconomic data source", icon: Database },
+  { key: "news_provider", label: "News Provider", desc: "News data source", icon: Zap },
+  { key: "fundamental_provider", label: "Fundamental Provider", desc: "Fundamental data source", icon: Bot },
 ] as const;
 
-const pushNotificationItems = [
-  { id: "push", label: "Push notifications", desc: "Receive push notifications" },
-  { id: "priceAlerts", label: "Price alerts", desc: "Price crossing thresholds" },
-  { id: "newsAlerts", label: "News alerts", desc: "Breaking news and announcements" },
-  { id: "portfolioAlerts", label: "Portfolio alerts", desc: "Portfolio value changes" },
-  { id: "macroAlerts", label: "Macro alerts", desc: "Macroeconomic events" },
+const scheduleItems = [
+  { key: "ingest_macro_cron", label: "Macro Ingestion", desc: "Macro data ingestion schedule" },
+  { key: "ingest_news_cron", label: "News Ingestion", desc: "News data ingestion schedule" },
+  { key: "ingest_fundamentals_cron", label: "Fundamentals Ingestion", desc: "Fundamentals data ingestion schedule" },
+  { key: "ingest_cron", label: "OHLCV Ingestion", desc: "OHLCV data ingestion schedule (trading days)" },
+  { key: "watchdog_cron", label: "Watchdog", desc: "System health check schedule" },
 ] as const;
 
-const dataRetentionOptions = [
-  { value: "1month", label: "1 Month", desc: "Delete data after 1 month" },
-  { value: "3months", label: "3 Months", desc: "Delete data after 3 months" },
-  { value: "1year", label: "1 Year", desc: "Delete data after 1 year (recommended)" },
-  { value: "forever", label: "Forever", desc: "Keep data indefinitely" },
-] as const;
-
-const themeOptions = [
-  { value: "light" as const, label: "Light", icon: Sun, desc: "Always use light mode" },
-  { value: "dark" as const, label: "Dark", icon: Moon, desc: "Always use dark mode" },
-  { value: "system" as const, label: "System", icon: Monitor, desc: "Match system preference" },
-] as const;
-
-const densityOptions = [
-  { value: "compact", label: "Compact", desc: "Maximum information density" },
-  { value: "default", label: "Default", desc: "Balanced density" },
-  { value: "comfortable", label: "Comfortable", desc: "More whitespace" },
+const llmFeatureItems = [
+  { key: "llm_analysis_enabled", label: "Analysis", desc: "AI-powered stock analysis" },
+  { key: "llm_news_summary_enabled", label: "News Summary", desc: "AI-generated news summaries" },
+  { key: "llm_stock_explanation_enabled", label: "Stock Explanation", desc: "AI explanations for stock scores" },
+  { key: "llm_macro_summary_enabled", label: "Macro Summary", desc: "AI macroeconomic summaries" },
+  { key: "llm_nl_screener_enabled", label: "NL Screener", desc: "Natural language screening queries" },
+  { key: "llm_research_enabled", label: "Research", desc: "AI-generated research memos" },
 ] as const;
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabValue>("general");
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    email: true,
-    push: true,
-    priceAlerts: true,
-    newsAlerts: true,
-    portfolioAlerts: true,
-    macroAlerts: false,
-  });
-  const [dataRetention, setDataRetention] = useState("1year");
+  const [settings, setSettings] = useState<BackendSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabValue>("providers");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await getSettings();
+        if (!cancelled) {
+          setSettings(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load settings");
+          setLoading(false);
+        }
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const tabs: { value: TabValue; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { value: "general", label: "General", icon: User },
-    { value: "appearance", label: "Appearance", icon: Palette },
-    { value: "notifications", label: "Notifications", icon: Bell },
-    { value: "data", label: "Data & Privacy", icon: Database },
-    { value: "advanced", label: "Advanced", icon: Shield },
+    { value: "providers", label: "Data Providers", icon: Database },
+    { value: "schedules", label: "Ingestion Schedules", icon: Clock },
+    { value: "llm", label: "LLM Features", icon: Bot },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm">Loading settings...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-destructive">Failed to load settings</p>
+            <p className="text-sm text-muted">{error}</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div>
           <h1 className="text-lg font-semibold">Settings</h1>
-          <p className="text-muted">Manage your account and application preferences</p>
+          <p className="text-muted">Backend configuration (read-only)</p>
         </div>
       </div>
 
@@ -130,377 +132,167 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        {activeTab === "general" && (
-          <div className="space-y-4" role="tabpanel" aria-label="General settings">
+        {activeTab === "providers" && (
+          <div className="space-y-4" role="tabpanel" aria-label="Data providers">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Profile</CardTitle>
-                <CardDescription>Manage your profile information</CardDescription>
+                <CardTitle className="text-sm">Data Providers</CardTitle>
+                <CardDescription>
+                  Configured data sources for each category. These are set via environment variables.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {providerItems.map((item) => {
+                  const value = settings[item.key as keyof BackendSettings] as string;
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between p-4 border border-border rounded-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon className="h-5 w-5 text-muted" />
+                        <div>
+                          <Label className="text-sm font-medium">{item.label}</Label>
+                          <p className="text-sm text-muted">{item.desc}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {value}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === "schedules" && (
+          <div className="space-y-4" role="tabpanel" aria-label="Ingestion schedules">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Ingestion Schedules</CardTitle>
+                <CardDescription>
+                  Cron expressions for automated data ingestion jobs. All times in UTC.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {scheduleItems.map((item) => {
+                  const value = settings[item.key as keyof BackendSettings] as string;
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between p-4 border border-border rounded-md"
+                    >
+                      <div>
+                        <Label className="text-sm font-medium">{item.label}</Label>
+                        <p className="text-sm text-muted">{item.desc}</p>
+                      </div>
+                      <Badge variant="outline" className="font-mono text-xs px-3 py-1">
+                        {value}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === "llm" && (
+          <div className="space-y-4" role="tabpanel" aria-label="LLM features">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">LLM Configuration</CardTitle>
+                <CardDescription>
+                  LLM provider and model settings.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
-                    <Input id="name" defaultValue="John Doe" className="w-full" />
+                    <Label className="text-sm font-medium">Provider</Label>
+                    <Badge variant="secondary" className="font-mono text-xs">
+                      {settings.llm_provider}
+                    </Badge>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                    <Input id="email" type="email" defaultValue="john.doe@example.com" className="w-full" />
+                    <Label className="text-sm font-medium">Model</Label>
+                    <Badge variant="secondary" className="font-mono text-xs">
+                      {settings.llm_model}
+                    </Badge>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
-                    <Input id="phone" type="tel" defaultValue="+62 812-3456-7890" className="w-full" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="company" className="text-sm font-medium">Company</Label>
-                    <Input id="company" defaultValue="Quant Analytics Ltd." className="w-full" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone" className="text-sm font-medium">Timezone</Label>
-                  <Select defaultValue="Asia/Jakarta">
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Asia/Jakarta">Asia/Jakarta (WIB)</SelectItem>
-                      <SelectItem value="Asia/Singapore">Asia/Singapore (SGT)</SelectItem>
-                      <SelectItem value="Asia/Shanghai">Asia/Shanghai (CST)</SelectItem>
-                      <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
-                      <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={() => {}}>Save Changes</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "appearance" && (
-          <div className="space-y-4" role="tabpanel" aria-label="Appearance settings">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Theme</CardTitle>
-                <CardDescription>Choose your preferred color theme</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  {themeOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={theme === option.value ? "default" : "outline"}
-                      className="h-24 flex-col items-start justify-between p-4 text-left"
-                      onClick={() => setTheme(option.value)}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <option.icon className="h-6 w-6" />
-                        <span className="font-medium">{option.label}</span>
-                      </div>
-                      <p className="text-sm text-muted">{option.desc}</p>
-                      <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary/20"
-                          style={{
-                            width:
-                              option.value === "light"
-                                ? "100%"
-                                : option.value === "dark"
-                                ? "50%"
-                                : "33%",
-                          }}
-                        />
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Density</CardTitle>
-                <CardDescription>Adjust the density of the interface</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  {densityOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant="outline"
-                      className="h-24 flex-col items-start justify-between p-4 text-left"
-                    >
-                      <span className="font-medium">{option.label}</span>
-                      <p className="text-sm text-muted">{option.desc}</p>
-                      <div className="mt-2 w-full h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary/20"
-                          style={{
-                            width:
-                              option.value === "compact"
-                                ? "100%"
-                                : option.value === "default"
-                                ? "66%"
-                                : "33%",
-                          }}
-                        />
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Sidebar</CardTitle>
-                <CardDescription>Configure sidebar behavior</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">Auto-collapse</Label>
-                    <p className="text-sm text-muted">Collapse sidebar on mobile</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">Show icons only when collapsed</Label>
-                    <p className="text-sm text-muted">Show only icons when sidebar is collapsed</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">Persistent on desktop</Label>
-                    <p className="text-sm text-muted">Keep sidebar open on desktop</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "notifications" && (
-          <div className="space-y-4" role="tabpanel" aria-label="Notifications settings">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Email Notifications</CardTitle>
-                <CardDescription>Configure email notification preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {emailNotificationItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <Label className="text-sm font-medium">LLM Enabled</Label>
+                    <div className="flex items-center gap-2">
                       <Switch
-                        checked={notifications[item.id as keyof NotificationSettings]}
-                        onCheckedChange={(checked) =>
-                          setNotifications((prev) => ({ ...prev, [item.id]: checked }))
-                        }
+                        checked={settings.llm_enabled}
+                        disabled
                       />
-                      <div>
-                        <Label className="text-sm font-medium">{item.label}</Label>
-                        <p className="text-sm text-muted">{item.desc}</p>
-                      </div>
+                      <span className="text-sm text-muted">
+                        {settings.llm_enabled ? "Enabled" : "Disabled"}
+                      </span>
                     </div>
                   </div>
-                ))}
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Push Notifications</CardTitle>
-                <CardDescription>Configure push notification preferences</CardDescription>
+                <CardTitle className="text-sm">LLM Feature Toggles</CardTitle>
+                <CardDescription>
+                  Per-feature AI capabilities. Requires LLM provider to be configured with API key.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {pushNotificationItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={notifications[item.id as keyof NotificationSettings]}
-                        onCheckedChange={(checked) =>
-                          setNotifications((prev) => ({ ...prev, [item.id]: checked }))
-                        }
-                      />
-                      <div>
-                        <Label className="text-sm font-medium">{item.label}</Label>
-                        <p className="text-sm text-muted">{item.desc}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "data" && (
-          <div className="space-y-4" role="tabpanel" aria-label="Data & Privacy settings">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Data Retention</CardTitle>
-                <CardDescription>How long to keep your data</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  {dataRetentionOptions.map((option) => (
-                    <label
-                      key={option.value}
-                      className="flex items-center gap-3 p-4 border border-border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                {llmFeatureItems.map((item) => {
+                  const enabled = settings[item.key as keyof BackendSettings] as boolean;
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between p-4 border border-border rounded-md"
                     >
-                      <input
-                        type="radio"
-                        name="dataRetention"
-                        value={option.value}
-                        checked={dataRetention === option.value}
-                        onChange={() => setDataRetention(option.value)}
-                        className="h-4 w-4"
-                      />
-                      <div>
-                        <p className="font-medium">{option.label}</p>
-                        <p className="text-sm text-muted">{option.desc}</p>
+                      <div className="flex items-center gap-3">
+                        <Switch checked={enabled} disabled />
+                        <div>
+                          <Label className="text-sm font-medium">{item.label}</Label>
+                          <p className="text-sm text-muted">{item.desc}</p>
+                        </div>
                       </div>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Data Export</CardTitle>
-                <CardDescription>Export your data in various formats</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
-                    <Download className="h-6 w-6 mb-2" />
-                    <span className="font-medium">CSV Export</span>
-                    <p className="text-sm text-muted">Export as CSV file</p>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
-                    <FileText className="h-6 w-6 mb-2" />
-                    <span className="font-medium">JSON Export</span>
-                    <p className="text-sm text-muted">Export as JSON file</p>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col items-start justify-between p-4">
-                    <Download className="h-6 w-6 mb-2" />
-                    <span className="font-medium">Full Backup</span>
-                    <p className="text-sm text-muted">Complete data backup</p>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Data Deletion</CardTitle>
-                <CardDescription>Permanently delete your account and all data</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
-                  <p className="text-sm text-destructive">
-                    This action is irreversible. All your data, including portfolio, alerts, and research, will be
-                    permanently deleted.
-                  </p>
-                </div>
-                <Button variant="destructive" onClick={() => {}}>
-                  Delete Account
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "advanced" && (
-          <div className="space-y-4" role="tabpanel" aria-label="Advanced settings">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">API Keys</CardTitle>
-                <CardDescription>Manage your API access keys</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-border rounded-md">
-                  <div>
-                    <p className="font-medium">Default API Key</p>
-                    <p className="text-sm text-muted font-mono">ihsg_quant_sk_live_****1234</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-negative hover:bg-negative/10">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Generate New Key
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Webhooks</CardTitle>
-                <CardDescription>Configure webhook endpoints for real-time events</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted">No webhooks configured</p>
-                <Button variant="outline" size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Webhook
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Cache Management</CardTitle>
-                <CardDescription>Manage application cache</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" onClick={() => {}}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Clear Cache
-                  </Button>
-                  <Button variant="outline" onClick={() => {}}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh Data
-                  </Button>
-                  <Button variant="outline" onClick={() => {}}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export Cache
-                  </Button>
-                </div>
-                <div className="p-4 bg-elevated-panel/50 rounded-md">
-                  <p className="text-sm font-medium mb-1">Cache Statistics</p>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted">Size</p>
-                      <p className="font-mono">245 MB</p>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={enabled ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {enabled ? "Enabled" : "Disabled"}
+                        </Badge>
+{!settings.llm_enabled && (
+              <Info className="h-3.5 w-3.5 text-muted" />
+            )}
+                      </div>
                     </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {!settings.llm_enabled && (
+              <Card className="border-destructive/50 bg-destructive/10">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 p-4">
+                    <XCircle className="h-5 w-5 text-destructive" />
                     <div>
-                      <p className="text-muted">Entries</p>
-                      <p className="font-mono">12,847</p>
-                    </div>
-                    <div>
-                      <p className="text-muted">Hit Rate</p>
-                      <p className="font-mono">94.2%</p>
+                      <p className="font-medium text-destructive">AI Features Unavailable</p>
+                      <p className="text-sm text-muted">
+                        LLM provider is not configured (missing API key). Set <code className="font-mono text-xs bg-muted px-1 rounded">LLM_API_KEY</code>
+                        in environment variables to enable AI features.
+                      </p>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>

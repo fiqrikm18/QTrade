@@ -81,3 +81,53 @@ async def test_run_and_persist_writes_backtest_and_trades(session):
         await session.execute(select(func.count()).select_from(BacktestTrade))
     ).scalar()
     assert n_trades > 0
+
+
+def test_compute_bias_audit_real_checks():
+    from datetime import date
+
+    import polars as pl
+
+    from app.application.services.backtest_service import _compute_bias_audit
+
+    signals = pl.DataFrame(
+        {
+            "ticker": ["BBCA", "BBRI"],
+            "asof_date": [date(2026, 1, 5), date(2026, 1, 6)],
+        }
+    )
+
+    class _Trade:
+        def __init__(self, ticker, entry_date):
+            self.ticker = ticker
+            self.entry_date = entry_date
+
+    trades = [_Trade("BBCA", date(2026, 1, 6)), _Trade("BBRI", date(2026, 1, 8))]
+    audit = _compute_bias_audit(signals, trades, {"tickers": ["BBCA", "BBRI", "BMRI"]})
+    assert audit["fills_at_or_after_signal"] is True
+    assert audit["no_post_d_score_revisions"] is True
+    assert audit["universe_resolved_per_date"] is True
+
+
+def test_compute_bias_audit_detects_lookahead():
+    from datetime import date
+
+    import polars as pl
+
+    from app.application.services.backtest_service import _compute_bias_audit
+
+    signals = pl.DataFrame(
+        {
+            "ticker": ["BBCA"],
+            "asof_date": [date(2026, 1, 10)],
+        }
+    )
+
+    class _Trade:
+        def __init__(self, ticker, entry_date):
+            self.ticker = ticker
+            self.entry_date = entry_date
+
+    trades = [_Trade("BBCA", date(2026, 1, 8))]  # filled BEFORE the signal
+    audit = _compute_bias_audit(signals, trades, {"tickers": ["BBCA"]})
+    assert audit["fills_at_or_after_signal"] is False

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 import polars as pl
 from sqlalchemy import select
@@ -88,6 +89,52 @@ async def _price_frame(
     return frame
 
 
+def _compute_bias_audit(
+    signals: pl.DataFrame, trades: list[Any], universe: dict[str, object] | None
+) -> dict[str, bool]:
+    """Real bias audit from the actual signals/trades used by the backtest.
+
+    - fills_at_or_after_signal: every trade entry_date >= that ticker's first
+      signal asof_date.
+    - no_post_d_score_revisions: no duplicate (ticker, asof_date) rows — a revised
+      score history would violate point-in-time scoring.
+    - universe_resolved_per_date: every traded ticker is in the universe.
+    """
+    signal_epoch: dict[str, date] = {}
+    seen: set[tuple[str, date]] = set()
+    no_revisions = True
+    for row in signals.to_dicts():
+        key = (row["ticker"], row["asof_date"])
+        if key in seen:
+            no_revisions = False
+        seen.add(key)
+        first = signal_epoch.get(row["ticker"])
+        if first is None or row["asof_date"] < first:
+            signal_epoch[row["ticker"]] = row["asof_date"]
+
+    universe_tickers: set[str] = set()
+    if universe:
+        stocks = universe.get("tickers")
+        if isinstance(stocks, list):
+            # stocks is list[object]; elements should be str
+            universe_tickers = {str(t) for t in stocks}  # pyright: ignore[reportUnknownArgumentType, reportUnknownVariableType]
+
+    fills_ok = True
+    universe_ok = True
+    for trade in trades:
+        epoch = signal_epoch.get(trade.ticker)
+        if epoch is not None and trade.entry_date < epoch:
+            fills_ok = False
+        if universe_tickers and trade.ticker not in universe_tickers:
+            universe_ok = False
+
+    return {
+        "fills_at_or_after_signal": fills_ok,
+        "no_post_d_score_revisions": no_revisions,
+        "universe_resolved_per_date": universe_ok,
+    }
+
+
 async def run_and_persist(
     session: AsyncSession,
     strategy: dict[str, object],
@@ -125,12 +172,7 @@ async def run_and_persist(
         scoring_version=scoring_version if model_version is None else None,
         model_version=model_version,
         metrics=metrics,
-        bias_audit={
-            "fills_at_or_after_signal": True,
-            "fundamentals_available_at_le_d": True,
-            "universe_resolved_per_date": True,
-            "no_post_d_score_revisions": True,
-        },
+        bias_audit=_compute_bias_audit(signals, trades, universe),
     )
     session.add(bt)
     await session.flush()

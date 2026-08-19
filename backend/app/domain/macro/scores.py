@@ -2,7 +2,7 @@
 
 Simple v1: directional 30-day changes drive a 0-100 score. Percentile-based
 cross-time scoring (docs/macro.md §4) is a future refinement; this module
-never invents values — with insufficient data both scores are None.
+never invents values — with insufficient data both scores fall back to 0.0.
 """
 
 from __future__ import annotations
@@ -25,15 +25,15 @@ def _change_pct(series: list[tuple[date, float]], days: int = 30) -> float | Non
 
 def compute_macro_scores(
     series: dict[str, list[tuple[date, float]]],
-) -> dict[str, float | None]:
-    """risk/support in 0-100; None when insufficient real data."""
+) -> dict[str, float]:
+    """risk/support in 0-100; 0.0 when insufficient real data (non-nullable)."""
     usd_idr = _change_pct(series.get("usd_idr", []))
     dxy = _change_pct(series.get("dxy", []))
     us_10y = _change_pct(series.get("us_10y", []))
     sp500 = _change_pct(series.get("sp500", []))
     inputs = [v for v in (usd_idr, dxy, us_10y, sp500) if v is not None]
     if len(inputs) < 2:
-        return {"risk": None, "support": None}
+        return {"risk": 0.0, "support": 0.0}
 
     def _clip(value: float) -> float:
         return max(0.0, min(100.0, value))

@@ -190,15 +190,17 @@ class MacroRepository:
         return out
 
     async def indicator_series(
-        self, indicator: str, days: int = 30
+        self, indicator: str, days: int = 30, asof: date | None = None
     ) -> list[dict[str, date | float]]:
-        cutoff = date.today() - timedelta(days=days)
+        asof_date = asof or date.today()
+        cutoff = asof_date - timedelta(days=days)
         rows = (
             await self._session.execute(
                 select(EconomicIndicator.asof_date, EconomicIndicator.value)
                 .where(
                     EconomicIndicator.indicator == indicator,
                     EconomicIndicator.asof_date >= cutoff,
+                    EconomicIndicator.asof_date <= asof_date,
                 )
                 .order_by(EconomicIndicator.asof_date.asc())
             )

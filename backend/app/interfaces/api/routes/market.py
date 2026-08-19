@@ -233,15 +233,19 @@ async def market_overview(
             )
         ]
 
-    # Real macro risk/support from ingested indicator series (None = no data yet).
+    # Real macro risk/support (0.0 fallback when no data).
     from app.domain.macro.scores import compute_macro_scores
     from app.infrastructure.repositories.macro_repo import MacroRepository
 
     macro_repo = MacroRepository(session)
     series: dict[str, list[tuple[date, float]]] = {}
     for code in ("usd_idr", "dxy", "us_10y", "sp500"):
-        rows = await macro_repo.indicator_series(code, days=30)
-        series[code] = [(r["asof_date"], float(r["value"])) for r in rows]  # type: ignore[assignment]
+        rows = await macro_repo.indicator_series(code, days=30, asof=asof)
+        series[code] = [
+            (r["asof_date"], float(r["value"]))  # type: ignore[misc]
+            for r in rows
+            if isinstance(r["asof_date"], date)
+        ]
     macro_scores = compute_macro_scores(series)
 
     # Real upcoming events from economic_events.

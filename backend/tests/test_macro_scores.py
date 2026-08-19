@@ -1,4 +1,4 @@
-"""Macro risk/support heuristic — computed from real series, never fabricated."""
+"""Macro risk/support heuristic: real series, 0.0 fallback when insufficient data."""
 
 from datetime import date, timedelta
 
@@ -24,12 +24,11 @@ def test_scores_computed_from_real_series():
         "sp500": _series(30, 5000.0, 0.0005),  # equities rising
     }
     out = compute_macro_scores(series)
-    assert out["risk"] is not None and out["support"] is not None
     assert 0.0 <= out["risk"] <= 100.0
     assert 0.0 <= out["support"] <= 100.0
     assert out["risk"] > out["support"]
 
 
-def test_scores_missing_data_return_none():
+def test_scores_missing_data_return_zero():
     out = compute_macro_scores({})
-    assert out == {"risk": None, "support": None}
+    assert out == {"risk": 0.0, "support": 0.0}

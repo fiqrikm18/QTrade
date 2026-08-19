@@ -18,7 +18,7 @@ type LoadState =
 export default function NewsPage() {
   const [filterCategory, setFilterCategory] = useState("All")
   const [filterSource, setFilterSource] = useState("All")
-  const [filterImpact, setFilterImpact] = useState<"all" | NewsItem["impact"]>("all")
+  const [filterImpact, setFilterImpact] = useState<"all" | Exclude<NewsItem["impact"], null>>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
@@ -41,6 +41,7 @@ export default function NewsPage() {
   const sources = ["All", "Bisnis Indonesia", "Kontan", "Reuters", "Bloomberg", "BPS", "Bank Indonesia", "CNBC Indonesia", "Investor Daily"]
 
   const impactVariant = (impact: NewsItem["impact"]): "destructive" | "warning" | "secondary" => {
+    if (!impact) return "secondary"
     switch (impact) {
       case "HIGH":
         return "destructive"
@@ -52,6 +53,7 @@ export default function NewsPage() {
   }
 
   const sentimentClass = (sentiment: NewsItem["sentiment"]): string => {
+    if (!sentiment) return "bg-muted/10 text-muted border-muted/40"
     switch (sentiment) {
       case "POSITIVE":
         return "bg-positive/10 text-positive border-positive/40"
@@ -156,7 +158,7 @@ export default function NewsPage() {
               </div>
               <div className="flex-1 min-w-[150px]">
                 <label className="block text-xs font-medium text-muted mb-1">Impact</label>
-                <Select value={filterImpact} onValueChange={(v) => setFilterImpact(v as "all" | NewsItem["impact"])}>
+                <Select value={filterImpact} onValueChange={(v) => setFilterImpact(v as "all" | "HIGH" | "MEDIUM" | "LOW")}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All Impact" />
                   </SelectTrigger>

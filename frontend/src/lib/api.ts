@@ -72,8 +72,8 @@ export interface StockAnalysis {
   opportunity_score: number | null;
   classification: string | null;
   confidence: number | null;
-  risk_level: string | null;
-  regime: string | null;
+  risk_level: "low" | "medium" | "high" | null;
+  regime: "trending_up" | "trending_down" | "ranging" | "volatile" | null;
   components: Record<string, unknown> | null;
   drivers: string[] | null;
   risks: string[] | null;
@@ -252,20 +252,20 @@ export interface CalendarEvent {
   event: string;
   impact: "HIGH" | "MEDIUM" | "LOW";
   category: string;
-  prev: string;
-  consensus: string;
-  actual: string;
+  prev: number | null;
+  consensus: number | null;
+  actual: number | null;
 }
 
 export interface NewsItem {
-  id: number;
+  id: string;
   date: string;
   time: string;
   title: string;
   source: string;
   category: string;
-  impact: "HIGH" | "MEDIUM" | "LOW";
-  sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+  impact: "HIGH" | "MEDIUM" | "LOW" | null;
+  sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL" | null;
   tickers: string[];
   summary: string;
 }
@@ -331,6 +331,52 @@ export interface ResearchMemo {
     fundamental: number;
   };
 }
+
+// Data Quality
+export interface DataQualityReport {
+  ohlcv: { last_update: string | null; row_count: number; tickers: number; gaps: string[] };
+  macro: { last_update: string | null; row_count: number; indicators: number };
+  calendar: { last_update: string | null; row_count: number; events: number };
+  news: { last_update: string | null; row_count: number; articles: number };
+  fundamentals: { last_update: string | null; row_count: number; tickers: number };
+  technical_features: { last_update: string | null; row_count: number; tickers: number };
+  asof: string;
+}
+
+// System Status
+export interface SystemStatus {
+  db_status: "healthy" | "unhealthy";
+  redis_status: "healthy" | "unhealthy";
+  jobs_running: number;
+  data_freshness: {
+    ohlcv: string | null;
+    macro: string | null;
+    news: string | null;
+    fundamentals: string | null;
+    latest_scan: string | null;
+  };
+  uptime_seconds: number;
+}
+
+// Screener Saved Configs
+export interface ScreenerSavedConfig {
+  id: string;
+  name: string;
+  filters: ScreenerFilters;
+  created_at: string;
+  updated_at: string;
+}
+
+// Portfolio CRUD
+export interface PortfolioCreate { name: string; }
+export interface PortfolioResponse {
+  id: string;
+  name: string;
+  created_at: string;
+  positions: PortfolioItem[];
+}
+export interface PositionCreate { ticker: string; quantity: number; avg_price: number; }
+export interface PositionUpdate { quantity?: number; avg_price?: number; }
 
 export interface StockListItem {
   ticker: string;
@@ -484,4 +530,53 @@ export function getAlerts(): Promise<Alert[]> {
 
 export function getResearchMemos(): Promise<ResearchMemo[]> {
   return request<ResearchMemo[]>("/api/v1/research/memos");
+}
+
+export function getDataQuality(): Promise<DataQualityReport> {
+  return request<DataQualityReport>("/api/v1/data/quality");
+}
+
+export function getSystemStatus(): Promise<SystemStatus> {
+  return request<SystemStatus>("/api/v1/system/status");
+}
+
+export function getScreenerSaved(): Promise<ScreenerSavedConfig[]> {
+  return request<ScreenerSavedConfig[]>("/api/v1/screener/saved");
+}
+
+export function createPortfolio(data: PortfolioCreate): Promise<PortfolioResponse> {
+  return request<PortfolioResponse>("/api/v1/portfolio", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getPortfolioDetail(id: string): Promise<PortfolioResponse> {
+  return request<PortfolioResponse>(`/api/v1/portfolio/${encodeURIComponent(id)}`);
+}
+
+export function addPosition(portfolioId: string, data: PositionCreate): Promise<PortfolioItem> {
+  return request<PortfolioItem>(`/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updatePosition(portfolioId: string, positionId: string, data: PositionUpdate): Promise<PortfolioItem> {
+  return request<PortfolioItem>(`/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deletePosition(portfolioId: string, positionId: string): Promise<void> {
+  return request<void>(`/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`, {
+    method: "DELETE",
+  });
+}
+
+export function deletePortfolio(id: string): Promise<void> {
+  return request<void>(`/api/v1/portfolio/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }

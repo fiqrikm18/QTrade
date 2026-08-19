@@ -218,8 +218,13 @@ class YFinanceProvider(MarketDataProvider):
                 items[key] = num
 
         shares = info.get("sharesOutstanding")
-        if shares and float(shares) > 0:
-            items["shares_outstanding"] = float(shares)
+        if shares is not None:
+            try:
+                shares_num = float(shares)
+            except (TypeError, ValueError):
+                shares_num = 0.0
+            if shares_num > 0:
+                items["shares_outstanding"] = shares_num
         dividend = info.get("dividendRate")
         if dividend and float(dividend) > 0:
             items["dividend_per_share"] = float(dividend)

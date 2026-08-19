@@ -38,7 +38,7 @@ def _fake_ticker(items, info):
     class _Ticker:
         def __init__(self):
             self.info = info
-            self.income_stmt = _FakeFrame(["Total Revenue"], {})
+            self.income_stmt = _FakeFrame(["2026-06-30"], {})
             self.balance_sheet = _FakeFrame(["Total Assets"], {})
             self.cashflow = _FakeFrame(["Operating Cash Flow"], {})
 
@@ -57,6 +57,7 @@ def test_maps_info_into_items(monkeypatch):
         "dividendRate": 0.5,
         "totalRevenue": 5000.0,
         "netIncomeToCommon": 800.0,
+        "mostRecentQuarter": "2026-03-31",
         "returnOnEquity": 0.15,
         "currentRatio": 1.5,
         "debtToEquity": 0.4,
@@ -70,7 +71,8 @@ def test_maps_info_into_items(monkeypatch):
     monkeypatch.setattr(yf, "Ticker", fake_ticker)
     provider = YFinanceProvider()
     out = provider.get_latest_fundamentals("BBCA")
-    assert out["period_end"] is not None
+    assert out["period_end"] == "2026-06-30"
+    assert out["reported_at"] == "2026-03-31"
     assert "items" in out
     items = out["items"]
     assert items["shares_outstanding"] == 1000

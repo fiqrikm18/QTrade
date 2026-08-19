@@ -116,6 +116,16 @@ async def stock_analysis(
     change_pct = change / prev * 100.0 if prev else 0.0
     shares = float(stock.shares_outstanding) if stock.shares_outstanding else 0.0
 
+    # Derive risk level and regime from latest technical features
+    from app.domain.technical.risk import derive_stock_risk_regime
+    from app.infrastructure.repositories.stock_score_repo import StockScoreRepository
+
+    indicators = await StockScoreRepository(session).latest_technical_features(ticker)
+    if indicators is not None:
+        risk_level, regime = derive_stock_risk_regime(indicators)
+    else:
+        risk_level, regime = ("UNKNOWN", "UNKNOWN")
+
     return {
         "ticker": score.ticker,
         "name": stock.name,
@@ -133,8 +143,8 @@ async def stock_analysis(
         else 0.0,
         "classification": score.classification or "neutral",
         "confidence": float(score.confidence) if score.confidence is not None else 0.0,
-        "risk_level": "MEDIUM",
-        "regime": "NEUTRAL",
+        "risk_level": risk_level,
+        "regime": regime,
         "components": score.score_components,  # type: ignore[assignment]
         "drivers": score.drivers or [],
         "risks": score.risks or [],

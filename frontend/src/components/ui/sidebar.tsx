@@ -30,7 +30,7 @@ const overviewNavigation = [
 
 const analysisNavigation = [
   { name: "Screener", href: "/screener", icon: Search },
-  { name: "Stocks", href: "/stocks/BBCA", icon: List },
+  { name: "Stocks", href: "/stocks", icon: List },
   { name: "Compare", href: "/compare", icon: GitCompare },
   { name: "Sectors", href: "/sectors", icon: BarChart2 },
 ];

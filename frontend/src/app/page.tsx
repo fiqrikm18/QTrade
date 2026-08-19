@@ -55,7 +55,7 @@ function fmtNum(v: number | null | undefined, digits = 0): string {
 }
 
 const QUICK_LINKS = [
-  { href: "/stocks/BBCA", label: "Stock Analysis", icon: BarChart3 },
+  { href: "/stocks", label: "Stock Universe", icon: BarChart3 },
   { href: "/screener", label: "Screener", icon: ListFilter },
   { href: "/compare", label: "Compare", icon: GitCompare },
   { href: "/research", label: "Research", icon: ClipboardList },

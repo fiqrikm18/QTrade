@@ -785,3 +785,13 @@ app = create_app()
 
 
 # Need to import after app creation
+
+
+async def test_screener_saved_not_implemented(client):
+    response = await client.get("/api/v1/screener/saved")
+    assert response.status_code == 200
+    assert response.json() == []
+
+    response = await client.post("/api/v1/screener/saved", json={"name": "x"})
+    assert response.status_code == 501
+    assert "not implemented" in response.json()["detail"].lower()

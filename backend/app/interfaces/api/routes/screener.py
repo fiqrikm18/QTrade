@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -163,6 +163,12 @@ async def list_saved_screeners() -> list[dict[str, object]]:
 
 @router.post("/saved", response_model=dict[str, object])
 async def save_screener(config: dict[str, object] = Body(...)) -> dict[str, object]:
-    """Save a screener configuration."""
-    # TODO: implement (saved screeners table is out of CP2 scope)
-    return {"id": "new", **config}
+    """Save a screener configuration.
+
+    Not implemented: no saved-screeners table yet. Returns 501 honestly
+    instead of fabricating an id.
+    """
+    raise HTTPException(
+        status_code=501,
+        detail="Saved screeners are not implemented yet",
+    )

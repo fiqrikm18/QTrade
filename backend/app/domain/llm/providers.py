@@ -32,10 +32,12 @@ def _build_openai(
 ) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
+    if not api_key:
+        raise LLMUnavailable("OpenAI provider requires LLM_API_KEY")
     return ChatOpenAI(
         model=model,
         temperature=temperature,
-        api_key=SecretStr(api_key) if api_key else SecretStr("test"),
+        api_key=SecretStr(api_key),
         base_url=base_url,
         timeout=request_timeout,
     )
@@ -49,10 +51,12 @@ def _build_anthropic(
 ) -> BaseChatModel:
     from langchain_anthropic import ChatAnthropic
 
+    if not api_key:
+        raise LLMUnavailable("Anthropic provider requires LLM_API_KEY")
     return ChatAnthropic(
         model_name=model,
         temperature=temperature,
-        api_key=SecretStr(api_key) if api_key else SecretStr("test"),
+        api_key=SecretStr(api_key),
         timeout=request_timeout,
         stop=None,
     )
@@ -66,10 +70,12 @@ def _build_google(
 ) -> BaseChatModel:
     from langchain_google_genai import ChatGoogleGenerativeAI
 
+    if not api_key:
+        raise LLMUnavailable("Google provider requires LLM_API_KEY")
     return ChatGoogleGenerativeAI(
         model=model,
         temperature=temperature,
-        api_key=SecretStr(api_key) if api_key else SecretStr("test"),
+        api_key=SecretStr(api_key),
         timeout=request_timeout,
     )
 
@@ -82,10 +88,12 @@ def _build_openrouter(
 ) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
+    if not api_key:
+        raise LLMUnavailable("OpenRouter provider requires LLM_API_KEY")
     return ChatOpenAI(
         model=model,
         temperature=temperature,
-        api_key=SecretStr(api_key) if api_key else SecretStr("test"),
+        api_key=SecretStr(api_key),
         base_url="https://openrouter.ai/api/v1",
         timeout=request_timeout,
     )

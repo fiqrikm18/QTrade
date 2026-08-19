@@ -31,6 +31,7 @@ def test_get_provider_openai_when_configured(monkeypatch):
     monkeypatch.setattr(s, "llm_provider", "openai")
     monkeypatch.setattr(s, "llm_model", "gpt-4o-mini")
     monkeypatch.setattr(s, "llm_temperature", 0.1)
+    monkeypatch.setattr(s, "llm_api_key", "test-key")
     provider = get_provider()
     assert provider.__class__.__name__ == "OpenAIProvider"
 
@@ -44,6 +45,7 @@ def test_get_provider_anthropic_when_configured(monkeypatch):
     monkeypatch.setattr(s, "llm_provider", "anthropic")
     monkeypatch.setattr(s, "llm_model", "claude-3-haiku-20240307")
     monkeypatch.setattr(s, "llm_temperature", 0.1)
+    monkeypatch.setattr(s, "llm_api_key", "test-key")
     provider = get_provider()
     assert provider.__class__.__name__ == "AnthropicProvider"
 
@@ -57,6 +59,7 @@ def test_get_provider_google_when_configured(monkeypatch):
     monkeypatch.setattr(s, "llm_provider", "google")
     monkeypatch.setattr(s, "llm_model", "gemini-1.5-flash")
     monkeypatch.setattr(s, "llm_temperature", 0.1)
+    monkeypatch.setattr(s, "llm_api_key", "test-key")
     provider = get_provider()
     assert provider.__class__.__name__ == "GoogleProvider"
 
@@ -70,6 +73,7 @@ def test_get_provider_openrouter_when_configured(monkeypatch):
     monkeypatch.setattr(s, "llm_provider", "openrouter")
     monkeypatch.setattr(s, "llm_model", "openai/gpt-4o-mini")
     monkeypatch.setattr(s, "llm_temperature", 0.1)
+    monkeypatch.setattr(s, "llm_api_key", "test-key")
     provider = get_provider()
     assert provider.__class__.__name__ == "OpenRouterProvider"
 
@@ -135,3 +139,23 @@ def test_openai_complete_json_smoke(monkeypatch):
     result = provider.complete_json("test", schema=ResultSchema)
     assert isinstance(result, ResultSchema)
     assert result.answer == "42"
+
+
+def test_keyed_providers_require_api_key():
+    from app.domain.llm.exceptions import LLMUnavailable
+    from app.domain.llm.providers import (
+        AnthropicProvider,
+        GoogleProvider,
+        OpenAIProvider,
+        OpenRouterProvider,
+    )
+
+    providers = (OpenAIProvider, AnthropicProvider, GoogleProvider, OpenRouterProvider)
+    for provider_cls in providers:
+        try:
+            provider_cls(model="test-model", temperature=0.1, api_key=None)
+        except LLMUnavailable:
+            continue
+        raise AssertionError(
+            f"{provider_cls.__name__} should raise LLMUnavailable without a key"
+        )

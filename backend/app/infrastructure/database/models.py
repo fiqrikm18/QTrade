@@ -307,3 +307,121 @@ class BacktestTrade(AuditMixin, Base):
     fees: Mapped[Decimal | None] = mapped_column(Numeric)
     slippage: Mapped[Decimal | None] = mapped_column(Numeric)
     exit_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class EconomicIndicator(AuditMixin, Base):
+    """Point-in-time macro indicator time series (docs/data-model.md §7)."""
+
+    __tablename__ = "economic_indicators"
+    __table_args__ = (
+        UniqueConstraint("indicator", "asof_date", "source", name="uq_econ_indicator"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    indicator: Mapped[str] = mapped_column(Text, nullable=False)
+    asof_date: Mapped[date] = mapped_column(Date, nullable=False)
+    value: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+    unit: Mapped[str] = mapped_column(Text, server_default="", nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+
+class EconomicEvent(AuditMixin, Base):
+    """Economic calendar events with release status (docs/data-model.md §8)."""
+
+    __tablename__ = "economic_events"
+    __table_args__ = (
+        UniqueConstraint("event", "scheduled_at", "source", name="uq_econ_event"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    event: Mapped[str] = mapped_column(Text, nullable=False)
+    country: Mapped[str] = mapped_column(Text, server_default="ID", nullable=False)
+    scheduled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    importance: Mapped[int] = mapped_column(
+        BigInteger, server_default="2", nullable=False
+    )
+    category: Mapped[str] = mapped_column(Text, server_default="", nullable=False)
+    previous: Mapped[Decimal | None] = mapped_column(Numeric)
+    consensus: Mapped[Decimal | None] = mapped_column(Numeric)
+    actual: Mapped[Decimal | None] = mapped_column(Numeric)
+    status: Mapped[str] = mapped_column(
+        Text, server_default="scheduled", nullable=False
+    )
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class NewsArticle(AuditMixin, Base):
+    """News articles ingested from RSS (docs/data-model.md §11)."""
+
+    __tablename__ = "news"
+    __table_args__ = (UniqueConstraint("source", "url", name="uq_news_source_url"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, server_default="", nullable=False)
+    category: Mapped[str] = mapped_column(Text, server_default="MARKET", nullable=False)
+    sentiment: Mapped[str | None] = mapped_column(Text)
+    impact: Mapped[str | None] = mapped_column(Text)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+
+class NewsEntity(AuditMixin, Base):
+    """Ticker references found in a news article (docs/data-model.md §11)."""
+
+    __tablename__ = "news_entities"
+    __table_args__ = (UniqueConstraint("article_id", "ticker", name="uq_news_entity"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    article_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("news.id", ondelete="CASCADE"), nullable=False
+    )
+    ticker: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class Portfolio(AuditMixin, Base):
+    """User portfolio (single-user v1) (docs/data-model.md §11)."""
+
+    __tablename__ = "portfolios"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str] = mapped_column(Text, server_default="Default", nullable=False)
+
+
+class PortfolioPosition(AuditMixin, Base):
+    """A holding: ticker + quantity + average cost (docs/data-model.md §11)."""
+
+    __tablename__ = "portfolio_positions"
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "ticker", name="uq_portfolio_position"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False
+    )
+    ticker: Mapped[str] = mapped_column(Text, nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+    avg_price: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+
+
+class IngestionCheckpoint(AuditMixin, Base):
+    """Crawler watermark per job (docs/data-pipeline.md §2.1)."""
+
+    __tablename__ = "ingestion_checkpoints"
+    __table_args__ = (UniqueConstraint("job_name", name="uq_checkpoint_job"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    job_name: Mapped[str] = mapped_column(Text, nullable=False)
+    watermark: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

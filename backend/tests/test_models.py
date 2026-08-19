@@ -127,3 +127,38 @@ async def test_backtest_and_trades_roundtrip(session):
     rows = (await session.execute(select(BacktestTrade))).scalars().all()
     assert len(rows) == 1
     assert rows[0].backtest_id == b.id
+
+
+def test_models_import_and_unique_constraints():
+    from sqlalchemy import UniqueConstraint
+
+    from app.infrastructure.database.models import (
+        EconomicEvent,
+        EconomicIndicator,
+        IngestionCheckpoint,
+        NewsArticle,
+        NewsEntity,
+        Portfolio,
+        PortfolioPosition,
+    )
+
+    models = [
+        EconomicIndicator,
+        EconomicEvent,
+        NewsArticle,
+        NewsEntity,
+        Portfolio,
+        PortfolioPosition,
+        IngestionCheckpoint,
+    ]
+    for model in models:
+        assert model.__tablename__, f"{model.__name__} missing tablename"
+
+    def uq_names(table) -> list[str]:
+        return [c.name for c in table.constraints if isinstance(c, UniqueConstraint)]
+
+    assert uq_names(EconomicIndicator.__table__) == ["uq_econ_indicator"]
+    assert uq_names(EconomicEvent.__table__) == ["uq_econ_event"]
+    assert uq_names(NewsArticle.__table__) == ["uq_news_source_url"]
+    assert uq_names(PortfolioPosition.__table__) == ["uq_portfolio_position"]
+    assert uq_names(IngestionCheckpoint.__table__) == ["uq_checkpoint_job"]

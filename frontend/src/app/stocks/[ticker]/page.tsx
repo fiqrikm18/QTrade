@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
@@ -18,9 +18,12 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getStockAnalysis,
+  getStocks,
   getTechnicalIndicators,
+  type StockListItem,
   type TechnicalIndicators,
 } from "@/lib/api";
+import { TickerSelect } from "@/components/ui/ticker-select";
 
 interface StockData {
   ticker: string;
@@ -113,6 +116,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 }
 
 export default function StockPage() {
+  const router = useRouter();
   const params = useParams<{ ticker: string }>();
   const ticker = (params?.ticker ?? "BBCA").toString().toUpperCase();
 
@@ -121,6 +125,8 @@ export default function StockPage() {
     useState<TechnicalIndicators | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [universe, setUniverse] = useState<StockListItem[]>([]);
+  const [universeError, setUniverseError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -164,6 +170,26 @@ export default function StockPage() {
     }
     fetchData();
   }, [ticker]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchUniverse() {
+      try {
+        const data = await getStocks(1, 100);
+        if (!cancelled) setUniverse(data.items);
+      } catch (err) {
+        if (!cancelled) {
+          setUniverseError(
+            err instanceof Error ? err.message : "Failed to load universe",
+          );
+        }
+      }
+    }
+    void fetchUniverse();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -358,6 +384,18 @@ export default function StockPage() {
       {/* Stock Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
+          <TickerSelect
+            options={universe}
+            value={ticker}
+            onSelect={(selected) =>
+              router.push(`/stocks/${selected.toUpperCase()}`)
+            }
+          />
+          {universeError && (
+            <p className="text-[10px] text-muted hidden lg:block max-w-40">
+              Universe unavailable: {universeError}
+            </p>
+          )}
           <div className="w-9 h-9 rounded-md bg-accent flex items-center justify-center">
             <span className="text-accent-foreground font-bold text-sm">
               {ticker}

@@ -66,8 +66,6 @@ DEFAULT_TOP_N = 50
 # ~250 trading sessions (calendar days * 5/7) to cover the 200-bar SMA200
 # regime check with margin; 252 calendar days would yield only ~160 bars.
 LOOKBACK_DAYS = 380
-# Test fixture asof date (matches test_scanner.py _ASOF)
-_ASOF = date(2024, 3, 1)
 
 _PROXY_COLUMNS = [
     "accumulation_proxy",
@@ -300,10 +298,9 @@ async def run_market_scan(
 
     # --- Step 1: universe -----------------------------------------------------
     if tickers is not None:
-        # Use provided tickers (for testing)
+        # Explicit tickers: resolve asof from the real DB data (latest trade
+        # date), never a fixture date. Universe objects are loaded per ticker.
         tickers = list(tickers)
-        assert len(tickers) == 2, f"Test mode expects 2 tickers, got {len(tickers)}"
-        # Build minimal universe objects for the test
         from sqlalchemy import select
 
         universe: list[Stock] = []
@@ -324,13 +321,14 @@ async def run_market_scan(
     # --- Step 2: asof + latest market data ------------------------------------
     # For explicit tickers (test mode), use as-is; otherwise convert to yfinance format
     if explicit_tickers:
-        # Test mode: tickers are internal format, DB stores them as-is
-        # Use a fixed asof date for deterministic tests
-        asof = _ASOF
-        start = asof - timedelta(days=lookback)
+        # Explicit tickers: DB stores them as-is; asof = latest trade date.
         scan_tickers = list(tickers)
         if index_ticker not in scan_tickers:
             scan_tickers.append(index_ticker)
+        asof = await repo_market.latest_trade_date(scan_tickers)
+        if asof is None:
+            return ScanResult(asof=date.today(), rows_written=0, ranking=[])
+        start = asof - timedelta(days=lookback)
         raw, present = await repo_market.load_ohlcv(scan_tickers, start, asof)
         ohlcv = _ohlcv_to_frame(raw)
         has_index = index_ticker in present

@@ -243,7 +243,7 @@ async def test_scan_writes_ranked_idempotent_cached():
                 session, BALANCED_PROFILE, tickers=[TICKER_A, TICKER_B]
             )
             assert isinstance(result, ScanResult)
-            assert result.asof >= _ASOF  # test seeded up to _ASOF
+            assert result.asof == _ASOF  # asof resolved from real DB latest trade date
             assert result.rows_written == 2
             assert len(result.ranking) == 2
             # ranking sorted descending by score; rising ticker ranks first

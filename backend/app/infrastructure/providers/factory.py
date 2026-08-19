@@ -13,41 +13,37 @@ from app.domain.macro.interfaces import (
     MacroEconomicProvider,
 )
 from app.domain.news.interfaces import NewsProvider
-from app.infrastructure.providers.bi_provider import BiProvider
 from app.infrastructure.providers.fred_provider import FredProvider
 from app.infrastructure.providers.news_provider import RSSNewsProvider
 from app.infrastructure.providers.yfinance_provider import YFinanceProvider
 
 
-class _CombinedMacroProvider(MacroEconomicProvider, EconomicCalendarProvider):
-    """Routes indicator codes to the right vendor; calendar from BI."""
+class _FredOnlyMacroProvider(MacroEconomicProvider, EconomicCalendarProvider):
+    """FRED-only macro + calendar (no calendar from FRED; returns empty)."""
 
-    def __init__(self, bi: BiProvider, fred: FredProvider) -> None:
-        self._bi = bi
+    def __init__(self, fred: FredProvider) -> None:
         self._fred = fred
 
     def get_indicators(self, codes: list[str], start: date, end: date) -> pl.DataFrame:
-        bi_codes = [c for c in codes if c in BiProvider.SUPPORTED_CODES]
-        fred_codes = [c for c in codes if c not in BiProvider.SUPPORTED_CODES]
-        frames: list[pl.DataFrame] = []
-        if bi_codes:
-            frames.append(self._bi.get_indicators(bi_codes, start, end))
-        if fred_codes:
-            frames.append(self._fred.get_indicators(fred_codes, start, end))
-        if not frames:
-            return pl.DataFrame(
-                schema={
-                    "indicator": pl.String,
-                    "asof_date": pl.Date,
-                    "value": pl.Float64,
-                    "unit": pl.String,
-                    "source": pl.String,
-                }
-            )
-        return pl.concat(frames)
+        return self._fred.get_indicators(codes, start, end)
 
     def get_calendar(self, start: date, end: date) -> pl.DataFrame:
-        return self._bi.get_calendar(start, end)
+        return self._empty_frame()
+
+    def _empty_frame(self) -> pl.DataFrame:
+        return pl.DataFrame(
+            schema={
+                "date": pl.String,
+                "time": pl.String,
+                "country": pl.String,
+                "event": pl.String,
+                "impact": pl.String,
+                "category": pl.String,
+                "prev": pl.Float64,
+                "consensus": pl.Float64,
+                "actual": pl.Float64,
+            }
+        )
 
 
 def build_macro_provider(
@@ -57,10 +53,10 @@ def build_macro_provider(
     from app.config.settings import get_settings
 
     s = settings or get_settings()
-    if s.macro_provider != "bi_fred":
+    if s.macro_provider != "fred":
         raise ValueError(f"unsupported macro provider: {s.macro_provider}")
-    combined = _CombinedMacroProvider(BiProvider(), FredProvider())
-    return combined, combined
+    provider = _FredOnlyMacroProvider(FredProvider())
+    return provider, provider
 
 
 def build_news_provider(settings: Settings | None = None) -> NewsProvider:

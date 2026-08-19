@@ -97,21 +97,26 @@ const TableHead = React.forwardRef<
 ));
 TableHead.displayName = "TableHead";
 
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn(
-      "px-3 align-middle",
-      "[&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap",
-      className,
-    )}
-    {...props}
-  />
-));
+interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
+  fallback?: React.ReactNode;
+}
+
+const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
+  ({ className, fallback = "—", children, ...props }, ref) => (
+    <td
+      ref={ref}
+      className={cn(
+        "px-3 align-middle",
+        "[&:has([role=checkbox])]:pr-0",
+        "whitespace-nowrap",
+        className,
+      )}
+      {...props}
+    >
+      {children ?? fallback}
+    </td>
+  ),
+);
 TableCell.displayName = "TableCell";
 
 const TableCaption = React.forwardRef<

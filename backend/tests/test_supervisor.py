@@ -26,7 +26,6 @@ def test_schedule_jobs_adds_triggers() -> None:
     assert ids == {
         "ingest_ohlcv_daily",
         "ingest_macro",
-        "ingest_calendar",
         "ingest_news",
         "ingest_fundamentals",
         "watchdog",

@@ -35,29 +35,11 @@ def _indicator_rows() -> pl.DataFrame:
 
     return pl.DataFrame(
         {
-            "indicator": ["usd_idr"],
+            "indicator": ["us_10y"],
             "asof_date": [date(2026, 8, 18)],
-            "value": [17836.0],
-            "unit": [""],
-            "source": ["BI"],
-        }
-    )
-
-
-def _event_rows() -> pl.DataFrame:
-    t0 = datetime(2026, 8, 20, 14, 0, tzinfo=UTC)
-    return pl.DataFrame(
-        {
-            "event": ["BI Rate Decision"],
-            "country": ["ID"],
-            "scheduled_at": [t0],
-            "importance": [3],
-            "category": ["CENTRAL_BANK"],
-            "previous": [5.75],
-            "consensus": [5.75],
-            "actual": [None],
-            "status": ["scheduled"],
-            "source": ["BI"],
+            "value": [4.25],
+            "unit": ["%"],
+            "source": ["FRED"],
         }
     )
 
@@ -91,18 +73,6 @@ async def test_ingest_macro_writes_and_advances_watermark(
     assert await repo.get("ingest_macro") is not None
     count = (await session.execute(select(EconomicIndicator))).scalars().all()
     assert len(count) == 1
-
-
-async def test_ingest_calendar_writes(session: AsyncSession, clean_tables, monkeypatch):
-    from app.interfaces.workers import jobs as jobs_module
-
-    monkeypatch.setattr(
-        jobs_module,
-        "_calendar_frame",
-        lambda start, end: _event_rows(),
-    )
-    assert await jobs_module._ingest_calendar() == 1
-    assert (await session.execute(select(EconomicEvent))).scalars().all()
 
 
 async def test_ingest_news_writes_and_entities(

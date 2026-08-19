@@ -32,7 +32,15 @@ logger = logging.getLogger("app.workers")
 
 _DEFAULT_QUEUE = "default"
 
-_MACRO_CODES = ["usd_idr", "bi_rate", "idn_10y", "us_10y", "dxy", "sp500"]
+_MACRO_CODES = [
+    "us_10y",
+    "us_2y",
+    "fed_funds",
+    "dxy",
+    "sp500",
+    "idn_usd_idr",
+    "idn_policy_rate",
+]
 
 
 def get_queue() -> Queue:
@@ -69,11 +77,6 @@ def _macro_frame(start: date, end: date) -> pl.DataFrame:
     return provider.get_indicators(_MACRO_CODES, start, end)
 
 
-def _calendar_frame(start: date, end: date) -> pl.DataFrame:
-    _macro, calendar = build_macro_provider()
-    return calendar.get_calendar(start, end)
-
-
 def _news_frame(since: datetime) -> pl.DataFrame:
     provider = build_news_provider()
     return provider.get_news(None, since)
@@ -94,25 +97,6 @@ async def _ingest_macro() -> int:
         written = await repo.upsert_indicators(df)
         # Monotonic: never move the watermark backward (clock skew / reruns).
         await checkpoints.set("ingest_macro", max(now, watermark))
-        return written
-    return 0
-
-
-def ingest_calendar() -> int:
-    return asyncio.run(_ingest_calendar())
-
-
-async def _ingest_calendar() -> int:
-    async for session in get_session():
-        checkpoints = CheckpointRepository(session)
-        repo = MacroRepository(session)
-        now = datetime.now(UTC)
-        watermark = await checkpoints.get("ingest_calendar") or now - timedelta(days=30)
-        start = watermark.date() - timedelta(days=2)
-        end = start + timedelta(days=45)
-        df = _calendar_frame(start, end)
-        written = await repo.upsert_events(df)
-        await checkpoints.set("ingest_calendar", max(now, watermark))
         return written
     return 0
 
@@ -190,7 +174,6 @@ __all__ = [
     "get_queue",
     "ingest_ohlcv_daily",
     "ingest_macro",
-    "ingest_calendar",
     "ingest_news",
     "ingest_fundamentals",
     "watchdog",

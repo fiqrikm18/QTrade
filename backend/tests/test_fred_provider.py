@@ -24,22 +24,23 @@ def _client(csv_body: str) -> httpx.Client:
 
 def test_series_map_known_codes() -> None:
     assert set(_SERIES_MAP) == {
-        "idn_10y",
         "us_10y",
         "us_2y",
         "fed_funds",
         "dxy",
         "sp500",
+        "idn_usd_idr",
+        "idn_policy_rate",
     }
 
 
 def test_parse_csv_frame() -> None:
     provider = FredProvider(client=_client(_CSV))
-    df = provider.get_indicators(["idn_10y"], date(2026, 8, 1), date(2026, 8, 31))
+    df = provider.get_indicators(["us_10y"], date(2026, 8, 1), date(2026, 8, 31))
     assert df.columns == ["indicator", "asof_date", "value", "unit", "source"]
     assert df.height == 2
     row = df.to_dicts()[0]
-    assert row["indicator"] == "idn_10y"
+    assert row["indicator"] == "us_10y"
     assert row["asof_date"] == date(2026, 8, 18)
     assert row["value"] == 6.65
     assert row["source"] == "FRED"

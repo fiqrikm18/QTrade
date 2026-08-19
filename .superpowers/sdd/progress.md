@@ -112,3 +112,14 @@ Task 14: complete (commit 5ac6a2c + fix cc66cb1, review Approved after 1 fix; Cr
 Task 15: complete (commit 10886f7, review Approved; _ASOF fixture removed, asof from real OHLCV latest_trade_date, hardcoded ticker assert removed)
 Task 16: complete (commit 12ef563, review Approved; hardcoded bias_audit replaced with real _compute_bias_audit (survivorship/forward-fill/future-data); Minor: two audit flags lack negative-case tests, universe type handling could be stricter — triage final)
 Task 17: complete (commit 0b920c4, review Approved; honest 501 for screener POST, empty list for GET, LLM providers fail honestly with LLMUnavailable, test placeholders removed)
+Task 18: complete (commit b4d23a4, review Approved; reference_data.py deleted (422 lines), 233 tests pass, full validation matrix clean with only pre-existing issues)
+
+=== Backend plan COMPLETE ===
+All 18 tasks reviewed and approved.
+Base: 5d3fb14 → Head: b4d23a4
+
+=== FINAL BACKEND VALIDATION ===
+pytest: 233 passed (18 deprecation warnings, no failures)
+pyright: 7 errors in 3 files — all pre-existing (portfolio_repo.py:3, stocks.py:3, system.py:1) — zero NEW
+ruff check: 1 error (stocks.py unused variable) — pre-existing
+ruff format: PASS (155 files)

@@ -17,12 +17,13 @@ from app.infrastructure.providers.exceptions import ProviderError
 _FRED_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 
 _SERIES_MAP: dict[str, tuple[str, str]] = {
-    "idn_10y": ("IRLTLT01IDM156N", "%"),
     "us_10y": ("DGS10", "%"),
     "us_2y": ("DGS2", "%"),
     "fed_funds": ("DFF", "%"),
     "dxy": ("DTWEXBGS", ""),
     "sp500": ("SP500", ""),
+    "idn_usd_idr": ("DEXIDUS", "IDR"),
+    "idn_policy_rate": ("INTDSBIDM193N", "%"),
 }
 
 

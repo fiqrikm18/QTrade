@@ -329,7 +329,11 @@ class EconomicIndicator(AuditMixin, Base):
 
 
 class EconomicEvent(AuditMixin, Base):
-    """Economic calendar events with release status (docs/data-model.md §8)."""
+    """Economic calendar events with release status (docs/data-model.md §8).
+
+    ``available_at`` is the anti-look-ahead gate: consumers must filter
+    ``available_at <= asof``, never ``scheduled_at`` or ``actual``.
+    """
 
     __tablename__ = "economic_events"
     __table_args__ = (
@@ -353,6 +357,9 @@ class EconomicEvent(AuditMixin, Base):
         Text, server_default="scheduled", nullable=False
     )
     source: Mapped[str] = mapped_column(Text, nullable=False)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
 
 class NewsArticle(AuditMixin, Base):

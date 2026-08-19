@@ -60,6 +60,7 @@ class MacroRepository:
     async def upsert_events(self, df: pl.DataFrame) -> int:
         if df.is_empty():
             return 0
+        now = datetime.now(UTC)
         records = [
             {
                 "event": r["event"],
@@ -78,6 +79,7 @@ class MacroRepository:
                 ),
                 "status": r["status"],
                 "source": r["source"],
+                "available_at": now,
             }
             for r in df.to_dicts()
         ]
@@ -90,6 +92,7 @@ class MacroRepository:
                 "actual": stmt.excluded["actual"],
                 "status": stmt.excluded["status"],
                 "importance": stmt.excluded["importance"],
+                "available_at": stmt.excluded["available_at"],
             },
         )
         result = await self._session.execute(stmt)

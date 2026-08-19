@@ -135,3 +135,128 @@ class YFinanceProvider(MarketDataProvider):
             market_cap=market_cap,
             asof=date.today(),
         )
+
+    def get_latest_fundamentals(self, ticker: str) -> dict[str, object]:
+        """Latest point-in-time fundamental snapshot from yfinance.
+
+        Returns ``{period_end, reported_at, items}`` where ``items`` uses the
+        canonical keys consumed by ``calculate_ratios``. Statement values are
+        preferred; ``info`` covers ``totalRevenue``/``netIncomeToCommon``,
+        shares and dividend. Missing rows are omitted; if nothing usable is
+        found, raises ``ValueError`` so the caller can fail honestly (no
+        fabricated numbers). ``reported_at`` is taken from ``info``
+        (``mostRecentQuarter``), never the fetch date.
+        """
+        symbol = _idx_symbol(ticker)
+        tk: Any = yf.Ticker(symbol)
+        info: dict[Any, Any] = dict(tk.info)
+        items: dict[str, float] = {}
+
+        def _stmt_value(stmt: Any, row: str) -> float | None:
+            if stmt is None or getattr(stmt, "empty", True):
+                return None
+            try:
+                value = stmt.loc[row]
+            except (KeyError, IndexError, TypeError):
+                return None
+            if hasattr(value, "iloc") and len(value) > 0:
+                value = value.iloc[0]
+            try:
+                num = float(value)
+            except (TypeError, ValueError):
+                return None
+            return num if num == num else None  # drop NaN
+
+        mapping: dict[str, tuple[str, str]] = {
+            "revenue": ("income_stmt", "Total Revenue"),
+            "gross_profit": ("income_stmt", "Gross Profit"),
+            "ebitda": ("income_stmt", "EBITDA"),
+            "ebit": ("income_stmt", "EBIT"),
+            "net_income": ("income_stmt", "Net Income"),
+            "eps": ("income_stmt", "Basic EPS"),
+            "interest_expense": ("income_stmt", "Interest Expense"),
+            "operating_cash_flow": ("cashflow", "Operating Cash Flow"),
+            "free_cash_flow": ("cashflow", "Free Cash Flow"),
+            "total_assets": ("balance_sheet", "Total Assets"),
+            "total_liabilities": (
+                "balance_sheet",
+                "Total Liabilities Net Minority Interest",
+            ),
+            "equity": ("balance_sheet", "Stockholders Equity"),
+            "debt": ("balance_sheet", "Total Debt"),
+            "cash": ("balance_sheet", "Cash And Cash Equivalents"),
+            "current_assets": ("balance_sheet", "Current Assets"),
+            "current_liabilities": ("balance_sheet", "Current Liabilities"),
+        }
+        statements = {
+            "income_stmt": getattr(tk, "income_stmt", None),
+            "cashflow": getattr(tk, "cashflow", None),
+            "balance_sheet": getattr(tk, "balance_sheet", None),
+        }
+        for key, (stmt_name, row) in mapping.items():
+            value = _stmt_value(statements[stmt_name], row)
+            if value is not None:
+                items[key] = value
+
+        # ``info`` also carries the latest-period figures; use them when the
+        # statement frames lack the row (yfinance sometimes returns info
+        # without statement frames).
+        for key, info_key in (
+            ("revenue", "totalRevenue"),
+            ("net_income", "netIncomeToCommon"),
+        ):
+            if key in items:
+                continue
+            raw = info.get(info_key)
+            if raw is None:
+                continue
+            try:
+                num = float(raw)
+            except (TypeError, ValueError):
+                continue
+            if num == num:  # drop NaN
+                items[key] = num
+
+        shares = info.get("sharesOutstanding")
+        if shares and float(shares) > 0:
+            items["shares_outstanding"] = float(shares)
+        dividend = info.get("dividendRate")
+        if dividend and float(dividend) > 0:
+            items["dividend_per_share"] = float(dividend)
+        if "equity" in items and items["equity"] > 0 and "shares_outstanding" in items:
+            items["bvps"] = items["equity"] / items["shares_outstanding"]
+
+        income_stmt = statements["income_stmt"]
+        period_end: Any = None
+        if income_stmt is not None and not income_stmt.empty:
+            try:
+                period_end = income_stmt.columns[0]
+            except (IndexError, TypeError):
+                period_end = None
+        most_recent_quarter: Any = info.get("mostRecentQuarter")
+
+        def _iso_date(value: Any) -> str | None:
+            if hasattr(value, "date"):
+                return value.date().isoformat()
+            if isinstance(value, str):
+                try:
+                    return date.fromisoformat(value).isoformat()
+                except ValueError:
+                    return None
+            return None
+
+        period_end_iso = (
+            _iso_date(period_end)
+            or _iso_date(most_recent_quarter)
+            or date.today().isoformat()
+        )
+        reported_at = _iso_date(most_recent_quarter) or period_end_iso
+
+        if not items:
+            raise ValueError(f"no fundamentals available for {ticker}")
+
+        return {
+            "period_end": period_end_iso,
+            "reported_at": reported_at,
+            "items": items,
+        }

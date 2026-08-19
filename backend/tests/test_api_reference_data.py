@@ -25,6 +25,8 @@ from app.infrastructure.database.models import (
     EconomicIndicator,
     NewsArticle,
     NewsEntity,
+    Portfolio,
+    PortfolioPosition,
     Stock,
     StockScore,
 )
@@ -259,31 +261,17 @@ class TestNewsEndpoints:
 
 
 class TestPortfolioEndpoints:
-    """GET /api/v1/portfolio (seed reference data)."""
+    """GET /api/v1/portfolio (real positions from portfolio_positions)."""
 
-    async def test_portfolio_returns_typed_list(self, client):
+    async def test_portfolio_empty_by_default(self, client, session: AsyncSession):
+        from sqlalchemy import delete
+
+        await session.execute(delete(PortfolioPosition))
+        await session.execute(delete(Portfolio))
+        await session.commit()
         response = await client.get(f"{BASE_URL}/portfolio")
         assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) > 0
-        item = data[0]
-        for key in (
-            "ticker",
-            "name",
-            "quantity",
-            "avgPrice",
-            "currentPrice",
-            "pnl",
-            "pnlPct",
-            "weight",
-            "marketValue",
-        ):
-            assert key in item, f"missing key {key}"
-        # derived fields must be internally consistent
-        assert item["marketValue"] == pytest.approx(
-            item["currentPrice"] * item["quantity"]
-        )
+        assert response.json() == []
 
 
 class TestAlertEndpoints:

@@ -20,6 +20,7 @@ def register_routes(app: FastAPI) -> None:
         research,
         screener,
         stocks,
+        system,
     )
 
     router.include_router(market.router, prefix="/market", tags=["market"])
@@ -37,5 +38,6 @@ def register_routes(app: FastAPI) -> None:
     router.include_router(
         data_quality.router, prefix="/data-quality", tags=["data-quality"]
     )
+    router.include_router(system.router, prefix="/system", tags=["system"])
 
     app.include_router(router)

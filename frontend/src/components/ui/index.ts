@@ -21,3 +21,4 @@ export * from "./sidebar";
 export * from "./topbar";
 export * from "./appshell";
 export * from "./ticker-select";
+export * from "./dialog";

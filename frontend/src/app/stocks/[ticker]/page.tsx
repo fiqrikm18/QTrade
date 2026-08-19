@@ -118,7 +118,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 export default function StockPage() {
   const router = useRouter();
   const params = useParams<{ ticker: string }>();
-  const ticker = (params?.ticker ?? "BBCA").toString().toUpperCase();
+  const ticker = params.ticker.toString().toUpperCase();
 
   const [stockData, setStockData] = useState<StockData | null>(null);
   const [technicalData, setTechnicalData] =
@@ -175,7 +175,7 @@ export default function StockPage() {
     let cancelled = false;
     async function fetchUniverse() {
       try {
-        const data = await getStocks(1, 100);
+        const data = await getStocks(1, 1000);
         if (!cancelled) setUniverse(data.items);
       } catch (err) {
         if (!cancelled) {

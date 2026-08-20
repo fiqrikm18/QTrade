@@ -6,6 +6,8 @@ Rows are ``date,value`` with ``.`` for missing observations.
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import date
 
 import httpx
@@ -22,9 +24,12 @@ _SERIES_MAP: dict[str, tuple[str, str]] = {
     "fed_funds": ("DFF", "%"),
     "dxy": ("DTWEXBGS", ""),
     "sp500": ("SP500", ""),
-    "idn_usd_idr": ("DEXIDUS", "IDR"),
-    "idn_policy_rate": ("INTDSBIDM193N", "%"),
+    "usd_idr": ("CCUSMA02IDM618N", "IDR"),
 }
+
+# Bank Indonesia's policy rate is intentionally absent: the previously
+# configured FRED identifier no longer resolves, and an interbank-rate proxy
+# must not be stored under the misleading canonical name ``bi_rate``.
 
 
 class FredProvider(MacroEconomicProvider):
@@ -60,11 +65,16 @@ class FredProvider(MacroEconomicProvider):
             raise ProviderError(f"FRED fetch failed for {code}: {exc}") from exc
 
         rows: list[dict[str, object]] = []
-        lines = resp.text.strip().splitlines()
-        if not lines or lines[0].strip() != "date,value":
-            raise ProviderError(f"FRED response for {code} is not a CSV")
-        for line in lines[1:]:
-            parts = line.split(",")
+        reader = csv.reader(io.StringIO(resp.text))
+        header = next(reader, None)
+        valid_headers = (["observation_date", series], ["date", "value"])
+        if header not in valid_headers:
+            content_type = resp.headers.get("content-type", "unknown")
+            raise ProviderError(
+                f"FRED response for {code} has unexpected CSV header "
+                f"{header!r} (content-type={content_type})"
+            )
+        for parts in reader:
             if len(parts) != 2:
                 continue
             day, value = parts[0].strip(), parts[1].strip()

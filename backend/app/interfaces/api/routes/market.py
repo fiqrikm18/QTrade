@@ -240,7 +240,9 @@ async def market_overview(
     macro_repo = MacroRepository(session)
     series: dict[str, list[tuple[date, float]]] = {}
     for code in ("usd_idr", "dxy", "us_10y", "sp500"):
-        rows = await macro_repo.indicator_series(code, days=30, asof=asof)
+        # USD/IDR is monthly while the other configured FRED series are daily.
+        # Ninety days provides enough monthly observations to calculate a trend.
+        rows = await macro_repo.indicator_series(code, days=90, asof=asof)
         series[code] = [
             (r["asof_date"], float(r["value"]))  # type: ignore[misc]
             for r in rows

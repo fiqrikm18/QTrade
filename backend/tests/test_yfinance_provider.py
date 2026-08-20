@@ -4,7 +4,9 @@ from datetime import date, datetime
 
 import pandas as pd
 import polars as pl
+import pytest
 
+from app.infrastructure.providers.exceptions import NoDataError
 from app.infrastructure.providers.yfinance_provider import normalize_to_polars
 
 
@@ -88,9 +90,5 @@ def test_normalize_drops_nan_rows_and_raises_when_empty():
         columns=["Open", "High", "Low", "Close", "Adj Close", "Volume"],
         index=pd.DatetimeIndex([], name="Date"),
     )
-    try:
+    with pytest.raises(NoDataError):
         normalize_to_polars(empty)
-    except ValueError:
-        pass
-    else:  # pragma: no cover - sanity guard
-        raise AssertionError("expected ValueError for empty frame")

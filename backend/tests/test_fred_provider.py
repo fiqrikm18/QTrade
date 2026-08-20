@@ -8,7 +8,7 @@ import pytest
 from app.infrastructure.providers.exceptions import ProviderError
 from app.infrastructure.providers.fred_provider import _SERIES_MAP, FredProvider
 
-_CSV = """date,value
+_CSV = """observation_date,DGS10
 2026-08-18,6.65
 2026-08-17,6.62
 """
@@ -29,8 +29,7 @@ def test_series_map_known_codes() -> None:
         "fed_funds",
         "dxy",
         "sp500",
-        "idn_usd_idr",
-        "idn_policy_rate",
+        "usd_idr",
     }
 
 
@@ -44,6 +43,12 @@ def test_parse_csv_frame() -> None:
     assert row["asof_date"] == date(2026, 8, 18)
     assert row["value"] == 6.65
     assert row["source"] == "FRED"
+
+
+def test_parse_legacy_csv_header() -> None:
+    provider = FredProvider(client=_client("date,value\n2026-08-18,4.25\n"))
+    df = provider.get_indicators(["us_10y"], date(2026, 8, 1), date(2026, 8, 31))
+    assert df["value"].to_list() == [4.25]
 
 
 def test_unknown_code_raises() -> None:

@@ -12,7 +12,9 @@ Steps:
 
 import asyncio
 import sys
+from collections.abc import Iterator
 from datetime import UTC, date, datetime, timedelta
+from typing import Protocol, cast
 
 import redis
 from sqlalchemy import func, select
@@ -25,6 +27,12 @@ from app.infrastructure.database.models import StockScore
 from app.infrastructure.database.session import get_session
 from app.infrastructure.providers.yfinance_provider import YFinanceProvider
 from app.infrastructure.repositories.market_data_repo import MarketDataRepository
+
+
+class _RedisClient(Protocol):
+    def scan_iter(self, match: str) -> Iterator[bytes]: ...
+
+    def get(self, name: bytes) -> bytes | None: ...
 
 
 def _symbol(arg: str) -> str:
@@ -74,11 +82,13 @@ async def main() -> None:
         ).scalar_one()
         print(f"stock_scores db_rows={count}")
 
-        r = redis.from_url(settings.redis_url)
-        keys = [k for k in r.scan_iter("scan:*")]
+        r = cast(_RedisClient, redis.from_url(settings.redis_url))
+        keys = list(r.scan_iter("scan:*"))
         print(f"redis cache keys={keys}")
         for k in keys:
-            print(f"  {k} -> {r.get(k)[:200]}...")
+            payload = r.get(k)
+            if payload is not None:
+                print(f"  {k} -> {payload[:200]}...")
 
 
 if __name__ == "__main__":

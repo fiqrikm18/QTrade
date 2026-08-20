@@ -1,8 +1,10 @@
 """Ingestion jobs: watermark semantics + idempotency (providers mocked)."""
 
+import logging
 from datetime import UTC, datetime
 
 import polars as pl
+import pytest
 import pytest_asyncio
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +17,32 @@ from app.infrastructure.database.models import (
     NewsEntity,
 )
 from app.infrastructure.repositories.checkpoint_repo import CheckpointRepository
+
+
+class _TickerResult:
+    def __init__(self, tickers: list[str]) -> None:
+        self._tickers = tickers
+
+    def scalars(self) -> "_TickerResult":
+        return self
+
+    def all(self) -> list[str]:
+        return self._tickers
+
+
+class _TickerSession:
+    def __init__(self, tickers: list[str]) -> None:
+        self._tickers = tickers
+
+    async def execute(self, _statement: object) -> _TickerResult:
+        return _TickerResult(self._tickers)
+
+
+def _sessions(tickers: list[str]):
+    async def generate():
+        yield _TickerSession(tickers)
+
+    return generate
 
 
 @pytest_asyncio.fixture(loop_scope="session", scope="function")
@@ -91,3 +119,38 @@ async def test_ingest_news_writes_and_entities(
     entities = (await session.execute(select(NewsEntity))).scalars().all()
     assert len(entities) == 1
     assert entities[0].ticker == "BBCA"
+
+
+async def test_ingest_ohlcv_skips_symbols_with_no_data(monkeypatch, caplog):
+    from app.infrastructure.providers.exceptions import NoDataError
+    from app.interfaces.workers import jobs as jobs_module
+
+    async def ingest(ticker, _start, _end, _session, *, storage_ticker=None):
+        del storage_ticker
+        if ticker == "EMPTY.JK":
+            raise NoDataError("empty history")
+        return (2 if ticker == "^JKSE" else 3), object()
+
+    monkeypatch.setattr(jobs_module, "get_session", _sessions(["GOOD", "EMPTY"]))
+    monkeypatch.setattr(jobs_module, "ingest_ohlcv", ingest)
+    caplog.set_level(logging.WARNING, logger="app.workers")
+
+    assert await jobs_module.ingest_ohlcv_history() == 5
+    assert "EMPTY.JK skipped" in caplog.text
+    assert "fetched=2 skipped=1 failed=0 rows=5" in caplog.text
+    assert "Traceback" not in caplog.text
+
+
+async def test_ingest_ohlcv_fails_when_provider_returns_no_data(monkeypatch):
+    from app.infrastructure.providers.exceptions import NoDataError, ProviderError
+    from app.interfaces.workers import jobs as jobs_module
+
+    async def ingest(_ticker, _start, _end, _session, *, storage_ticker=None):
+        del storage_ticker
+        raise NoDataError("empty history")
+
+    monkeypatch.setattr(jobs_module, "get_session", _sessions(["EMPTY"]))
+    monkeypatch.setattr(jobs_module, "ingest_ohlcv", ingest)
+
+    with pytest.raises(ProviderError, match="fetched no data for any active symbol"):
+        await jobs_module.ingest_ohlcv_history()

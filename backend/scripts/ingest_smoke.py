@@ -27,7 +27,7 @@ async def main() -> None:
 
     print(f"== OHLCV ingest {ticker} {start.isoformat()} .. {today.isoformat()} ==")
 
-    async with get_session() as session:
+    async for session in get_session():
         rows, report = await ingest_ohlcv(ticker, start, today, session)
         print(f"rows_written={rows}")
         print(

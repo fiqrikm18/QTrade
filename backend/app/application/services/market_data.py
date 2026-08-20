@@ -17,6 +17,8 @@ async def ingest_ohlcv(
     end: date,
     session: AsyncSession,
     provider: MarketDataProvider | None = None,
+    *,
+    storage_ticker: str | None = None,
 ) -> tuple[int, QualityReport]:
     """Fetch OHLCV for ``ticker`` (sync provider) then validate + async upsert.
 
@@ -42,5 +44,10 @@ async def ingest_ohlcv(
         source_ts = datetime.now(tz=UTC)
 
     repo = MarketDataRepository(session)
-    rows = await repo.upsert_ohlcv(ticker, valid_df, provider_name, source_ts)
+    rows = await repo.upsert_ohlcv(
+        storage_ticker or ticker,
+        valid_df,
+        provider_name,
+        source_ts,
+    )
     return rows, report

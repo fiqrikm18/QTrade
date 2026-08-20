@@ -10,9 +10,9 @@ _XLSX_PATH = Path(__file__).resolve().parents[2] / "stock-list.xlsx"
 
 
 async def main() -> None:
-    async with get_session() as session:
+    async for session in get_session():
         count = await seed_universe(session, path=_XLSX_PATH)
-    print(f"seeded {count} universe rows")
+        print(f"seeded {count} universe rows")
 
 
 if __name__ == "__main__":

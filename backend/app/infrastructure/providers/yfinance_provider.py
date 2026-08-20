@@ -8,6 +8,7 @@ import yfinance as yf  # pyright: ignore[reportMissingTypeStubs]
 
 from app.domain.common.types import Quote, UniverseItem
 from app.domain.market.interfaces import MarketDataProvider
+from app.infrastructure.providers.exceptions import NoDataError
 
 _OHLCV_RENAME: dict[str, str] = {
     "Open": "open",
@@ -35,7 +36,7 @@ def normalize_to_polars(frame: Any) -> pl.DataFrame:
     source_timestamp. NaN rows dropped; raises if nothing remains.
     """
     if frame.empty:
-        raise ValueError("no OHLCV data: empty history frame")
+        raise NoDataError("no OHLCV data: empty history frame")
     df = frame.reset_index()
     date_col = "Date" if "Date" in df.columns else df.columns[0]
     df = df.rename(columns={date_col: "trade_date", **_OHLCV_RENAME})
@@ -44,7 +45,7 @@ def normalize_to_polars(frame: Any) -> pl.DataFrame:
             raise ValueError(f"missing expected column: {missing}")
     df = df.dropna(subset=["trade_date", "open", "high", "low", "close", "volume"])
     if df.empty:
-        raise ValueError("no OHLCV rows after dropping NaN")
+        raise NoDataError("no OHLCV rows after dropping NaN")
     # Build native Python lists to avoid requiring pyarrow for pandas interop.
     data: dict[str, list[Any]] = {
         "trade_date": df["trade_date"].dt.date.tolist(),

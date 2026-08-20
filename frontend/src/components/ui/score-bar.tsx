@@ -4,6 +4,7 @@ export interface ScoreBarProps {
   score: number | null | undefined;
   classification?: string;
   confidence?: number;
+  label?: string;
 }
 
 function scoreTone(score: number): string {
@@ -12,10 +13,20 @@ function scoreTone(score: number): string {
   return "text-negative";
 }
 
-export function ScoreBar({ score, classification, confidence }: ScoreBarProps) {
+export function ScoreBar({
+  score,
+  classification,
+  confidence,
+  label,
+}: ScoreBarProps) {
   if (score == null) {
     return (
       <div className="space-y-1">
+        {label && (
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+        )}
         <div className="flex items-baseline justify-between gap-2">
           <span className={cn("text-2xl font-bold", "text-muted-foreground")}>
             —
@@ -41,6 +52,11 @@ export function ScoreBar({ score, classification, confidence }: ScoreBarProps) {
   const clamped = Math.max(0, Math.min(100, score));
   return (
     <div className="space-y-1">
+      {label && (
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+      )}
       <div className="flex items-baseline justify-between gap-2">
         <span className={cn("text-2xl font-bold", scoreTone(score))}>
           {score.toFixed(1)}

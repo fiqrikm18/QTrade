@@ -59,6 +59,46 @@ export interface ScreenerResult {
   asof: string | null;
 }
 
+export interface ValuationRatios {
+  per: number | null;
+  pbv: number | null;
+  psr: number | null;
+  ev_ebitda: number | null;
+  fcf_yield: number | null;
+  dividend_yield: number | null;
+}
+
+export interface FundamentalRatios {
+  roe: number | null;
+  roa: number | null;
+  roic: number | null;
+  npm: number | null;
+  gpm: number | null;
+  opm: number | null;
+  debt_equity: number | null;
+  current_ratio: number | null;
+  interest_coverage: number | null;
+}
+
+export interface SmartMoneyData {
+  score: number | null;
+  proxies: {
+    accumulation_proxy: number | null;
+    volume_proxy: number | null;
+    structure_proxy: number | null;
+    rs_proxy: number | null;
+    liquidity_proxy: number | null;
+    vol_behavior_proxy: number | null;
+  } | null;
+}
+
+export interface RiskMetrics {
+  hist_vol_20: number | null;
+  max_drawdown_250d: number | null;
+  avg_turnover_20d: number | null;
+  beta_vs_ihsg: number | null;
+}
+
 export interface StockAnalysis {
   ticker: string;
   name: string | null;
@@ -74,6 +114,11 @@ export interface StockAnalysis {
   confidence: number | null;
   risk_level: "low" | "medium" | "high" | null;
   regime: "trending_up" | "trending_down" | "ranging" | "volatile" | null;
+  technical_indicators: TechnicalIndicators | null;
+  valuation: ValuationRatios | null;
+  fundamental: FundamentalRatios | null;
+  smart_money: SmartMoneyData | null;
+  risk_metrics: RiskMetrics;
   components: Record<string, unknown> | null;
   drivers: string[] | null;
   risks: string[] | null;
@@ -84,7 +129,6 @@ export interface StockAnalysis {
 }
 
 export interface TechnicalIndicators {
-  ticker: string;
   rsi_14: number | null;
   macd: number | null;
   macd_signal: number | null;
@@ -466,14 +510,6 @@ export function getStockAnalysis(
   );
 }
 
-export function getTechnicalIndicators(
-  ticker: string,
-): Promise<TechnicalIndicators> {
-  return request<TechnicalIndicators>(
-    `/api/v1/stocks/${encodeURIComponent(ticker)}/technical?profile=balanced`,
-  );
-}
-
 export function getStocks(
   page = 1,
   pageSize = 20,
@@ -588,7 +624,7 @@ export function getResearchMemos(): Promise<ResearchMemo[]> {
 }
 
 export function getDataQuality(): Promise<DataQualityReport> {
-  return request<DataQualityReport>("/api/v1/data/quality");
+  return request<DataQualityReport>("/api/v1/data-quality");
 }
 
 export function getSystemStatus(): Promise<SystemStatus> {

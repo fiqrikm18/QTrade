@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("", response_model=dict[str, object])
-async def get_settings() -> dict[str, object]:
+async def get_settings_view() -> dict[str, object]:
     settings = get_settings()
     return {
         "macro_provider": settings.macro_provider,

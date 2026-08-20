@@ -18,10 +18,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getStockAnalysis,
   getStocks,
-  getTechnicalIndicators,
   type StockListItem,
   type StockAnalysis,
-  type TechnicalIndicators,
 } from "@/lib/api";
 import { TickerSelect } from "@/components/ui/ticker-select";
 import { RiskLevelBadge } from "@/components/ui/risk-level-badge";
@@ -31,10 +29,7 @@ import { PriceChange } from "@/components/ui/price-change";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 
-function fmtNum(
-  v: number | null | undefined,
-  digits = 0,
-): string {
+function fmtNum(v: number | null | undefined, digits = 0): string {
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
   return v.toLocaleString("en-US", {
     minimumFractionDigits: digits,
@@ -42,15 +37,20 @@ function fmtNum(
   });
 }
 
-function fmtIndicator(
-  v: number | null | undefined,
-  digits = 2,
-): string {
+function fmtIndicator(v: number | null | undefined, digits = 2): string {
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
   return v.toLocaleString("en-US", {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
+}
+
+function fmtCompact(v: number | null | undefined): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  if (Math.abs(v) >= 1e12) return `Rp ${(v / 1e12).toFixed(2)} T`;
+  if (Math.abs(v) >= 1e9) return `Rp ${(v / 1e9).toFixed(2)} B`;
+  if (Math.abs(v) >= 1e6) return `Rp ${(v / 1e6).toFixed(1)} M`;
+  return `Rp ${v.toFixed(0)}`;
 }
 
 export default function StockPage() {
@@ -59,7 +59,6 @@ export default function StockPage() {
   const ticker = params.ticker.toString().toUpperCase();
 
   const [analysis, setAnalysis] = useState<StockAnalysis | null>(null);
-  const [technical, setTechnical] = useState<TechnicalIndicators | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [universe, setUniverse] = useState<StockListItem[]>([]);
@@ -70,12 +69,8 @@ export default function StockPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const [analysisData, technicalData] = await Promise.all([
-          getStockAnalysis(ticker),
-          getTechnicalIndicators(ticker),
-        ]);
+        const analysisData = await getStockAnalysis(ticker);
         setAnalysis(analysisData);
-        setTechnical(technicalData);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load stock data",
@@ -175,32 +170,59 @@ export default function StockPage() {
     );
   }
 
+  const COMPONENT_LABELS: Record<string, string> = {
+    technical: "Technical",
+    fundamental: "Fundamental",
+    momentum: "Momentum",
+    relative_strength: "Relative Strength",
+    smart_money: "Smart Money",
+    factor: "Factor",
+    sector: "Sector",
+    macro: "Macro",
+    ml: "ML",
+    risk: "Risk",
+    regime: "Regime",
+    breadth_score: "Breadth",
+  };
+
   const componentEntries = Object.entries(analysis.components ?? {})
-    .filter(([, v]) => v !== undefined)
+    .filter(
+      (entry): entry is [string, number] => typeof entry[1] === "number",
+    )
     .map(([k, v]) => [k, v] as const);
 
-  const technicalRows = technical
+  const technicalScore =
+    typeof analysis.components?.technical === "number"
+      ? analysis.components.technical
+      : null;
+
+  const technicalIndicators = analysis.technical_indicators;
+
+  const technicalRows = technicalIndicators
     ? [
-        { label: "RSI (14)", value: technical.rsi_14 },
-        { label: "MACD", value: technical.macd },
-        { label: "MACD Signal", value: technical.macd_signal },
-        { label: "MACD Histogram", value: technical.macd_hist },
-        { label: "SMA 20", value: technical.sma_20 },
-        { label: "SMA 50", value: technical.sma_50 },
-        { label: "SMA 200", value: technical.sma_200 },
-        { label: "EMA 20", value: technical.ema_20 },
-        { label: "ATR (14)", value: technical.atr_14 },
-        { label: "ADX (14)", value: technical.adx_14 },
-        { label: "Bollinger Upper", value: technical.boll_upper },
-        { label: "Bollinger Mid", value: technical.boll_mid },
-        { label: "Bollinger Lower", value: technical.boll_lower },
-        { label: "ROC (20)", value: technical.roc_20 },
-        { label: "Relative Volume", value: technical.rel_volume },
-        { label: "Hist Vol (20)", value: technical.hist_vol_20 },
-        { label: "Stoch %K", value: technical.stoch_k },
-        { label: "Stoch %D", value: technical.stoch_d },
+        { label: "RSI (14)", value: technicalIndicators.rsi_14 },
+        { label: "MACD", value: technicalIndicators.macd },
+        { label: "MACD Signal", value: technicalIndicators.macd_signal },
+        { label: "MACD Histogram", value: technicalIndicators.macd_hist },
+        { label: "SMA 20", value: technicalIndicators.sma_20 },
+        { label: "SMA 50", value: technicalIndicators.sma_50 },
+        { label: "SMA 200", value: technicalIndicators.sma_200 },
+        { label: "EMA 20", value: technicalIndicators.ema_20 },
+        { label: "ATR (14)", value: technicalIndicators.atr_14 },
+        { label: "ADX (14)", value: technicalIndicators.adx_14 },
+        { label: "Bollinger Upper", value: technicalIndicators.boll_upper },
+        { label: "Bollinger Mid", value: technicalIndicators.boll_mid },
+        { label: "Bollinger Lower", value: technicalIndicators.boll_lower },
+        { label: "ROC (20)", value: technicalIndicators.roc_20 },
+        { label: "Relative Volume", value: technicalIndicators.rel_volume },
+        { label: "Hist Vol (20)", value: technicalIndicators.hist_vol_20 },
+        { label: "Stoch %K", value: technicalIndicators.stoch_k },
+        { label: "Stoch %D", value: technicalIndicators.stoch_d },
       ]
     : [];
+
+  const hasTechnicalSummary =
+    analysis.risk_level || analysis.regime || technicalScore !== null;
 
   return (
     <div className="space-y-4">
@@ -236,8 +258,8 @@ export default function StockPage() {
                   ? analysis.market_cap > 1e12
                     ? "Large Cap"
                     : analysis.market_cap > 1e11
-                    ? "Mid Cap"
-                    : "Small Cap"
+                      ? "Mid Cap"
+                      : "Small Cap"
                   : "N/A"}
               </Badge>
               <Badge variant="outline" className="text-[10px]">
@@ -245,8 +267,8 @@ export default function StockPage() {
                   ? analysis.volume > 1e7
                     ? "Liquidity: Very High"
                     : analysis.volume > 1e6
-                    ? "Liquidity: High"
-                    : "Liquidity: Medium"
+                      ? "Liquidity: High"
+                      : "Liquidity: Medium"
                   : "Liquidity: N/A"}
               </Badge>
             </div>
@@ -265,8 +287,8 @@ export default function StockPage() {
                 analysis.classification === "OPPORTUNITY"
                   ? "success"
                   : analysis.classification === "WATCHLIST"
-                  ? "default"
-                  : "destructive"
+                    ? "default"
+                    : "destructive"
               }
               className="text-[10px]"
             >
@@ -291,8 +313,8 @@ export default function StockPage() {
                 analysis.classification === "OPPORTUNITY"
                   ? "success"
                   : analysis.classification === "WATCHLIST"
-                  ? "default"
-                  : "destructive"
+                    ? "default"
+                    : "destructive"
               }
               className="text-[10px]"
             >
@@ -314,7 +336,9 @@ export default function StockPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Risks</span>
-                <span className="font-medium">{analysis.risks?.length ?? 0}</span>
+                <span className="font-medium">
+                  {analysis.risks?.length ?? 0}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Invalidation</span>
@@ -333,25 +357,51 @@ export default function StockPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {componentEntries.length === 0 ? (
-              <p className="text-xs text-muted">No component scores available</p>
+              <p className="text-xs text-muted">
+                No component scores available
+              </p>
             ) : (
               componentEntries.map(([key, value]) => (
                 <ScoreBar
                   key={key}
-                  score={typeof value === "number" ? value : null}
+                  score={value}
+                  label={COMPONENT_LABELS[key] ?? key.replace(/_/g, " ")}
                 />
               ))
             )}
           </CardContent>
         </Card>
 
-        {/* Technical Indicators Table */}
+        {/* Technical */}
         <Card className="md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-sm">Technical Indicators</CardTitle>
+            <CardTitle className="text-sm">Technical</CardTitle>
+            <Badge variant="outline" className="text-[10px]">
+              {`As of ${new Date(
+                technicalIndicators?.asof ??
+                  analysis.asof ??
+                  new Date().toISOString(),
+              ).toLocaleDateString("en-US")}`}
+            </Badge>
           </CardHeader>
           <CardContent>
-            {technical ? (
+            {hasTechnicalSummary && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted">Risk Level</p>
+                  <RiskLevelBadge level={analysis.risk_level} />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted">Regime</p>
+                  <RegimeBadge regime={analysis.regime} />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted">Technical Score</p>
+                  <ScoreBar score={technicalScore} />
+                </div>
+              </div>
+            )}
+            {technicalRows.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -363,17 +413,22 @@ export default function StockPage() {
                 <TableBody>
                   {technicalRows.map((row) => (
                     <TableRow key={row.label}>
-                      <TableCell className="text-xs text-muted">{row.label}</TableCell>
+                      <TableCell className="text-xs text-muted">
+                        {row.label}
+                      </TableCell>
                       <TableCell className="text-xs font-medium tabular-nums">
                         {fmtIndicator(row.value)}
                       </TableCell>
                       <TableCell className="text-xs">
                         {(() => {
                           const v = row.value;
-                          if (v === null || v === undefined) return <span className="text-muted">—</span>;
+                          if (v === null || v === undefined)
+                            return <span className="text-muted">—</span>;
                           if (row.label === "RSI (14)") {
                             return v > 70 ? (
-                              <span className="text-negative">Overbought ▼</span>
+                              <span className="text-negative">
+                                Overbought ▼
+                              </span>
                             ) : v < 30 ? (
                               <span className="text-positive">Oversold ▲</span>
                             ) : (
@@ -387,7 +442,10 @@ export default function StockPage() {
                               <span className="text-negative">Bearish ▼</span>
                             );
                           }
-                          if (row.label.includes("SMA") || row.label.includes("EMA")) {
+                          if (
+                            row.label.includes("SMA") ||
+                            row.label.includes("EMA")
+                          ) {
                             const price = analysis.price;
                             if (price && v) {
                               return price > v ? (
@@ -411,7 +469,7 @@ export default function StockPage() {
                   ))}
                 </TableBody>
               </Table>
-            ) : (
+            ) : hasTechnicalSummary ? null : (
               <EmptyState
                 title="No technical data"
                 description="Technical indicators are not available for this ticker."
@@ -422,31 +480,90 @@ export default function StockPage() {
         </Card>
       </div>
 
-      {/* Second Grid: Valuation, Smart Money, Risk - placeholder cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      {/* Second Grid: Fundamental, Valuation, Smart Money, Risk */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Fundamental */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+            <CardTitle className="text-sm">Fundamental</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {analysis.fundamental ? (
+              <div className="space-y-2 text-xs">
+                {[
+                  { label: "ROE", value: analysis.fundamental.roe, isPct: true },
+                  { label: "ROA", value: analysis.fundamental.roa, isPct: true },
+                  { label: "ROIC", value: analysis.fundamental.roic, isPct: true },
+                  { label: "Net Margin", value: analysis.fundamental.npm, isPct: true },
+                  { label: "Gross Margin", value: analysis.fundamental.gpm, isPct: true },
+                  { label: "Op Margin", value: analysis.fundamental.opm, isPct: true },
+                  { label: "Debt/Equity", value: analysis.fundamental.debt_equity, isPct: false },
+                  { label: "Current Ratio", value: analysis.fundamental.current_ratio, isPct: false },
+                  { label: "Interest Coverage", value: analysis.fundamental.interest_coverage, isPct: false },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex justify-between py-1.5 border-b border-border/50 last:border-0"
+                  >
+                    <span className="text-muted">{row.label}</span>
+                    <span className="font-medium tabular-nums">
+                      {row.value !== null && row.value !== undefined
+                        ? row.isPct
+                          ? `${fmtNum(row.value * 100, 1)}%`
+                          : `${fmtNum(row.value, 2)}x`
+                        : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No fundamental data"
+                description="Financial statements are not ingested yet for this ticker."
+                icon="database"
+              />
+            )}
+          </CardContent>
+        </Card>
+
         {/* Valuation */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-sm">Valuation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 text-xs">
-              {[
-                { label: "PER", value: null, suffix: "x" },
-                { label: "PBV", value: null, suffix: "x" },
-                { label: "EV/EBITDA", value: null, suffix: "x" },
-                { label: "PSR", value: null, suffix: "x" },
-                { label: "FCF Yield", value: null, suffix: "%" },
-                { label: "Div Yield", value: null, suffix: "%" },
-              ].map((row) => (
-                <div key={row.label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
-                  <span className="text-muted">{row.label}</span>
-                  <span className="font-medium tabular-nums">
-                    {row.value !== null ? fmtNum(row.value, 1) + row.suffix : "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {analysis.valuation ? (
+              <div className="space-y-2 text-xs">
+                {[
+                  { label: "PER", value: analysis.valuation.per, suffix: "x" },
+                  { label: "PBV", value: analysis.valuation.pbv, suffix: "x" },
+                  { label: "EV/EBITDA", value: analysis.valuation.ev_ebitda, suffix: "x" },
+                  { label: "PSR", value: analysis.valuation.psr, suffix: "x" },
+                  { label: "FCF Yield", value: analysis.valuation.fcf_yield, suffix: "%" },
+                  { label: "Div Yield", value: analysis.valuation.dividend_yield, suffix: "%" },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex justify-between py-1.5 border-b border-border/50 last:border-0"
+                  >
+                    <span className="text-muted">{row.label}</span>
+                    <span className="font-medium tabular-nums">
+                      {row.value !== null && row.value !== undefined
+                        ? row.suffix === "%"
+                          ? `${fmtNum(row.value * 100, 2)}%`
+                          : `${fmtNum(row.value, 2)}${row.suffix}`
+                        : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No valuation data"
+                description="Financial statements are not ingested yet for this ticker."
+                icon="database"
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -454,24 +571,73 @@ export default function StockPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-sm">Smart Money</CardTitle>
-            <Badge variant="outline" className="text-[10px]">PROXY</Badge>
+            <Badge variant="outline" className="text-[10px]">
+              PROXY
+            </Badge>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs">
             <div className="flex justify-between">
+              <span className="text-muted">Smart Money Score</span>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.score !== null &&
+                analysis.smart_money?.score !== undefined
+                  ? fmtNum(analysis.smart_money.score, 1)
+                  : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted">Accumulation Proxy</span>
-              <Badge variant="secondary" className="text-[10px]">—</Badge>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.proxies?.accumulation_proxy !== null &&
+                analysis.smart_money?.proxies?.accumulation_proxy !== undefined
+                  ? fmtNum(analysis.smart_money.proxies.accumulation_proxy, 0)
+                  : "—"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Volume Anomaly</span>
-              <Badge variant="secondary" className="text-[10px]">—</Badge>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.proxies?.volume_proxy !== null &&
+                analysis.smart_money?.proxies?.volume_proxy !== undefined
+                  ? fmtNum(analysis.smart_money.proxies.volume_proxy, 0)
+                  : "—"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Structure Score</span>
-              <Badge variant="secondary" className="text-[10px]">—</Badge>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.proxies?.structure_proxy !== null &&
+                analysis.smart_money?.proxies?.structure_proxy !== undefined
+                  ? fmtNum(analysis.smart_money.proxies.structure_proxy, 0)
+                  : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">RS Proxy</span>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.proxies?.rs_proxy !== null &&
+                analysis.smart_money?.proxies?.rs_proxy !== undefined
+                  ? fmtNum(analysis.smart_money.proxies.rs_proxy, 0)
+                  : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Liquidity Proxy</span>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.proxies?.liquidity_proxy !== null &&
+                analysis.smart_money?.proxies?.liquidity_proxy !== undefined
+                  ? fmtNum(analysis.smart_money.proxies.liquidity_proxy, 0)
+                  : "—"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Vol-Price Agreement</span>
-              <Badge variant="secondary" className="text-[10px]">—</Badge>
+              <span className="font-medium tabular-nums">
+                {analysis.smart_money?.proxies?.vol_behavior_proxy !== null &&
+                analysis.smart_money?.proxies?.vol_behavior_proxy !== undefined
+                  ? fmtNum(analysis.smart_money.proxies.vol_behavior_proxy, 0)
+                  : "—"}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -485,22 +651,42 @@ export default function StockPage() {
             <div className="flex justify-between">
               <span className="text-muted">Volatility (20D)</span>
               <span className="font-medium tabular-nums">
-                {technical?.hist_vol_20 !== null && technical?.hist_vol_20 !== undefined
-                  ? `${fmtNum(technical.hist_vol_20 * 100, 1)}%`
+                {analysis.risk_metrics?.hist_vol_20 !== null &&
+                analysis.risk_metrics?.hist_vol_20 !== undefined
+                  ? `${fmtNum(analysis.risk_metrics.hist_vol_20 * 100, 1)}%`
                   : "—"}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Max Drawdown (250D)</span>
-              <span className="font-medium tabular-nums">—</span>
+              <span className="font-medium tabular-nums">
+                {analysis.risk_metrics?.max_drawdown_250d !== null &&
+                analysis.risk_metrics?.max_drawdown_250d !== undefined
+                  ? `${fmtNum(analysis.risk_metrics.max_drawdown_250d * 100, 1)}%`
+                  : "—"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Beta vs IHSG</span>
-              <span className="font-medium tabular-nums">—</span>
+              <span className="font-medium tabular-nums">
+                {analysis.risk_metrics?.beta_vs_ihsg !== null &&
+                analysis.risk_metrics?.beta_vs_ihsg !== undefined
+                  ? fmtNum(analysis.risk_metrics.beta_vs_ihsg, 2)
+                  : "—"}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted">Liquidity Risk</span>
-              <Badge variant="secondary" className="text-[10px]">—</Badge>
+              <span className="text-muted">Liquidity (Avg Turnover 20D)</span>
+              <span className="font-medium tabular-nums">
+                {analysis.risk_metrics?.avg_turnover_20d !== null &&
+                analysis.risk_metrics?.avg_turnover_20d !== undefined
+                  ? fmtCompact(analysis.risk_metrics.avg_turnover_20d)
+                  : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Risk Level</span>
+              <RiskLevelBadge level={analysis.risk_level} />
             </div>
           </CardContent>
         </Card>
@@ -511,11 +697,21 @@ export default function StockPage() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm">Price Chart</CardTitle>
           <div className="flex items-center gap-1 text-[10px] text-muted">
-            <span className="px-1.5 py-0.5 bg-elevated-panel border border-border rounded">1D</span>
-            <span className="px-1.5 py-0.5 border border-border rounded">1W</span>
-            <span className="px-1.5 py-0.5 border border-border rounded">1M</span>
-            <span className="px-1.5 py-0.5 border border-border rounded">3M</span>
-            <span className="px-1.5 py-0.5 border border-border rounded">1Y</span>
+            <span className="px-1.5 py-0.5 bg-elevated-panel border border-border rounded">
+              1D
+            </span>
+            <span className="px-1.5 py-0.5 border border-border rounded">
+              1W
+            </span>
+            <span className="px-1.5 py-0.5 border border-border rounded">
+              1M
+            </span>
+            <span className="px-1.5 py-0.5 border border-border rounded">
+              3M
+            </span>
+            <span className="px-1.5 py-0.5 border border-border rounded">
+              1Y
+            </span>
           </div>
         </CardHeader>
         <CardContent>
@@ -616,18 +812,54 @@ export default function StockPage() {
           </Card>
         </TabsContent>
 
-        {/* Fundamental Tab - placeholder */}
+        {/* Fundamental Tab */}
         <TabsContent value="fundamental">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Fundamental Data</CardTitle>
+              <CardTitle className="text-sm">Fundamental Ratios</CardTitle>
             </CardHeader>
             <CardContent>
-              <EmptyState
-                title="Fundamental data unavailable"
-                description="Detailed fundamental metrics require additional data integration."
-                icon="database"
-              />
+              {analysis.fundamental ? (
+                <div className="space-y-2 text-xs max-w-md">
+                  {[
+                    { label: "ROE", value: analysis.fundamental.roe, isPct: true },
+                    { label: "ROA", value: analysis.fundamental.roa, isPct: true },
+                    { label: "ROIC", value: analysis.fundamental.roic, isPct: true },
+                    { label: "Net Margin", value: analysis.fundamental.npm, isPct: true },
+                    { label: "Gross Margin", value: analysis.fundamental.gpm, isPct: true },
+                    { label: "Op Margin", value: analysis.fundamental.opm, isPct: true },
+                    { label: "Debt/Equity", value: analysis.fundamental.debt_equity, isPct: false },
+                    { label: "Current Ratio", value: analysis.fundamental.current_ratio, isPct: false },
+                    { label: "Interest Coverage", value: analysis.fundamental.interest_coverage, isPct: false },
+                    { label: "PER", value: analysis.valuation?.per ?? null, isPct: false },
+                    { label: "PBV", value: analysis.valuation?.pbv ?? null, isPct: false },
+                    { label: "EV/EBITDA", value: analysis.valuation?.ev_ebitda ?? null, isPct: false },
+                    { label: "PSR", value: analysis.valuation?.psr ?? null, isPct: false },
+                    { label: "FCF Yield", value: analysis.valuation?.fcf_yield ?? null, isPct: true },
+                    { label: "Div Yield", value: analysis.valuation?.dividend_yield ?? null, isPct: true },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex justify-between py-1.5 border-b border-border/50 last:border-0"
+                    >
+                      <span className="text-muted">{row.label}</span>
+                      <span className="font-medium tabular-nums">
+                        {row.value !== null && row.value !== undefined
+                          ? row.isPct
+                            ? `${fmtNum(row.value * 100, 1)}%`
+                            : `${fmtNum(row.value, 2)}x`
+                          : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Fundamental data unavailable"
+                  description="Detailed fundamental metrics require financial statements to be ingested."
+                  icon="database"
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

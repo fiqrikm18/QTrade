@@ -41,4 +41,23 @@ describe("getStocks", () => {
     expect(result.total).toBe(2);
     expect(result.page_size).toBe(20);
   });
+
+  it("appends the search query to the universe request", async () => {
+    const payload = { items: [], total: 0, page: 1, page_size: 20 };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+      text: async () => JSON.stringify(payload),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getStocks(1, 20, "telkom");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/stocks?page=1&page_size=20&search=telkom",
+      expect.anything(),
+    );
+    expect(result.total).toBe(0);
+  });
 });

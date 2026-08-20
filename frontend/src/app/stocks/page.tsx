@@ -15,7 +15,6 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { getStocks, type StockListItem } from "@/lib/api";
-import { filterStocks } from "@/lib/stocks";
 
 const PAGE_SIZE = 20;
 
@@ -25,8 +24,22 @@ export default function StocksPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDebouncedSearch(searchQuery.trim()),
+      300,
+    );
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +47,11 @@ export default function StocksPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await getStocks(page, PAGE_SIZE);
+        const data = await getStocks(
+          page,
+          PAGE_SIZE,
+          debouncedSearch || undefined,
+        );
         if (cancelled) return;
         setItems(data.items);
         setTotal(data.total);
@@ -50,9 +67,8 @@ export default function StocksPage() {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [page, debouncedSearch]);
 
-  const filtered = filterStocks(items, searchQuery);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   if (isLoading) {
@@ -80,7 +96,7 @@ export default function StocksPage() {
               setPage(1);
               setIsLoading(true);
               setError(null);
-              void getStocks(1, PAGE_SIZE)
+              void getStocks(1, PAGE_SIZE, debouncedSearch || undefined)
                 .then((data) => {
                   setItems(data.items);
                   setTotal(data.total);
@@ -112,14 +128,14 @@ export default function StocksPage() {
         <Input
           placeholder="Search ticker or name..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="w-full sm:w-72"
         />
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
+          {items.length === 0 ? (
             <div className="p-6 text-muted text-center text-sm">
               No stocks match the current search.
             </div>
@@ -133,7 +149,7 @@ export default function StocksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((item) => (
+                {items.map((item) => (
                   <TableRow
                     key={item.ticker}
                     className="cursor-pointer"

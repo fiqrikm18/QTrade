@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import StocksPage from "@/app/stocks/page";
+import { getStocks } from "@/lib/api";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 
@@ -31,15 +32,32 @@ describe("StocksPage", () => {
     expect(screen.getByText("Bank Central Asia")).toBeInTheDocument();
   });
 
-  it("filters rows by search query", async () => {
+  it("searches the server when typing a query", async () => {
+    vi.mocked(getStocks).mockImplementation(async (_page, _size, search) => {
+      const all = [
+        { ticker: "BBCA", name: "Bank Central Asia", board: "Utama" },
+        { ticker: "TLKM", name: "Telkom Indonesia", board: "Utama" },
+      ];
+      const q = (search ?? "").trim().toLowerCase();
+      const items = all.filter(
+        (s) =>
+          s.ticker.toLowerCase().includes(q) ||
+          s.name.toLowerCase().includes(q),
+      );
+      return { items, total: items.length, page: 1, page_size: 20 };
+    });
+
     render(<StocksPage />);
     await screen.findByText("BBCA");
     fireEvent.change(
       screen.getByPlaceholderText("Search ticker or name..."),
       { target: { value: "telkom" } },
     );
-    expect(screen.getByText("TLKM")).toBeInTheDocument();
-    expect(screen.queryByText("BBCA")).not.toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(getStocks).toHaveBeenCalledWith(1, 20, "telkom"),
+    );
+    expect(await screen.findByText("TLKM")).toBeInTheDocument();
   });
 
   it("navigates to the detail page on row click", async () => {

@@ -3,7 +3,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database.models import OhlcvDaily, Stock, StockScore
@@ -31,12 +31,17 @@ async def list_stocks(
     page: int = 1,
     page_size: int = 20,
     sector: str | None = None,
+    search: str | None = None,
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, object]:
     """Get paginated list of stocks."""
     from sqlalchemy import select
 
     query = select(Stock).where(Stock.is_active.is_(True))
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.where(or_(Stock.ticker.ilike(term), Stock.name.ilike(term)))
 
     total_result = await session.execute(
         select(func.count()).select_from(query.subquery())

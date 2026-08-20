@@ -334,12 +334,25 @@ export interface ResearchMemo {
 
 // Data Quality
 export interface DataQualityReport {
-  ohlcv: { last_update: string | null; row_count: number; tickers: number; gaps: string[] };
+  ohlcv: {
+    last_update: string | null;
+    row_count: number;
+    tickers: number;
+    gaps: string[];
+  };
   macro: { last_update: string | null; row_count: number; indicators: number };
   calendar: { last_update: string | null; row_count: number; events: number };
   news: { last_update: string | null; row_count: number; articles: number };
-  fundamentals: { last_update: string | null; row_count: number; tickers: number };
-  technical_features: { last_update: string | null; row_count: number; tickers: number };
+  fundamentals: {
+    last_update: string | null;
+    row_count: number;
+    tickers: number;
+  };
+  technical_features: {
+    last_update: string | null;
+    row_count: number;
+    tickers: number;
+  };
   asof: string;
 }
 
@@ -388,15 +401,33 @@ export interface ScreenerSavedConfig {
 }
 
 // Portfolio CRUD
-export interface PortfolioCreate { name: string; }
+export interface PortfolioCreate {
+  name: string;
+}
 export interface PortfolioResponse {
   id: string;
   name: string;
   created_at: string;
   positions: PortfolioItem[];
 }
-export interface PositionCreate { ticker: string; quantity: number; avg_price: number; }
-export interface PositionUpdate { quantity?: number; avg_price?: number; }
+export interface PortfolioSummary {
+  id: string;
+  name: string;
+  created_at: string;
+  totalMarketValue: number;
+  totalPnL: number;
+  totalPnLPct: number;
+  positionsCount: number;
+}
+export interface PositionCreate {
+  ticker: string;
+  quantity: number;
+  avg_price: number;
+}
+export interface PositionUpdate {
+  quantity?: number;
+  avg_price?: number;
+}
 
 export interface StockListItem {
   ticker: string;
@@ -439,17 +470,21 @@ export function getTechnicalIndicators(
   ticker: string,
 ): Promise<TechnicalIndicators> {
   return request<TechnicalIndicators>(
-    `/api/v1/stocks/${encodeURIComponent(ticker)}/technical`,
+    `/api/v1/stocks/${encodeURIComponent(ticker)}/technical?profile=balanced`,
   );
 }
 
 export function getStocks(
   page = 1,
   pageSize = 20,
+  search?: string,
 ): Promise<StocksResult> {
-  return request<StocksResult>(
-    `/api/v1/stocks?page=${page}&page_size=${pageSize}`,
-  );
+  const query = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  if (search && search.trim()) query.set("search", search.trim());
+  return request<StocksResult>(`/api/v1/stocks?${query.toString()}`);
 }
 
 export function runScreener(
@@ -540,8 +575,8 @@ export function getStockCompare(
   );
 }
 
-export function getPortfolio(): Promise<PortfolioItem[]> {
-  return request<PortfolioItem[]>("/api/v1/portfolio");
+export function getPortfolio(): Promise<PortfolioResponse[]> {
+  return request<PortfolioResponse[]>("/api/v1/portfolio");
 }
 
 export function getAlerts(): Promise<Alert[]> {
@@ -568,7 +603,9 @@ export function getScreenerSaved(): Promise<ScreenerSavedConfig[]> {
   return request<ScreenerSavedConfig[]>("/api/v1/screener/saved");
 }
 
-export function createPortfolio(data: PortfolioCreate): Promise<PortfolioResponse> {
+export function createPortfolio(
+  data: PortfolioCreate,
+): Promise<PortfolioResponse> {
   return request<PortfolioResponse>("/api/v1/portfolio", {
     method: "POST",
     body: JSON.stringify(data),
@@ -576,27 +613,48 @@ export function createPortfolio(data: PortfolioCreate): Promise<PortfolioRespons
 }
 
 export function getPortfolioDetail(id: string): Promise<PortfolioResponse> {
-  return request<PortfolioResponse>(`/api/v1/portfolio/${encodeURIComponent(id)}`);
+  return request<PortfolioResponse>(
+    `/api/v1/portfolio/${encodeURIComponent(id)}`,
+  );
 }
 
-export function addPosition(portfolioId: string, data: PositionCreate): Promise<PortfolioItem> {
-  return request<PortfolioItem>(`/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export function addPosition(
+  portfolioId: string,
+  data: PositionCreate,
+): Promise<PortfolioItem> {
+  return request<PortfolioItem>(
+    `/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
 }
 
-export function updatePosition(portfolioId: string, positionId: string, data: PositionUpdate): Promise<PortfolioItem> {
-  return request<PortfolioItem>(`/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
+export function updatePosition(
+  portfolioId: string,
+  positionId: string,
+  data: PositionUpdate,
+): Promise<PortfolioItem> {
+  return request<PortfolioItem>(
+    `/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
+  );
 }
 
-export function deletePosition(portfolioId: string, positionId: string): Promise<void> {
-  return request<void>(`/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`, {
-    method: "DELETE",
-  });
+export function deletePosition(
+  portfolioId: string,
+  positionId: string,
+): Promise<void> {
+  return request<void>(
+    `/api/v1/portfolio/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export function deletePortfolio(id: string): Promise<void> {

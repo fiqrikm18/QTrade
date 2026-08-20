@@ -60,9 +60,10 @@ class TestStockEndpoints:
 
     @pytest.fixture
     async def seed_stock_with_score(self, session):
-        """Seed a stock with scores for testing."""
+        """Seed stocks with scores for testing."""
         await session.execute(delete(StockScore).where(StockScore.ticker == "BBCA"))
         await session.execute(delete(Stock).where(Stock.ticker == "BBCA"))
+        await session.execute(delete(Stock).where(Stock.ticker == "TLKM"))
         await session.flush()
         await session.commit()
 
@@ -76,6 +77,17 @@ class TestStockEndpoints:
             is_active=True,
         )
         session.add(stock)
+        await session.flush()
+
+        session.add(
+            Stock(
+                ticker="TLKM",
+                name="Telkom Indonesia",
+                listing_date=date(1995, 11, 14),
+                board="Utama",
+                is_active=True,
+            )
+        )
         await session.flush()
 
         score = StockScore(
@@ -247,6 +259,48 @@ class TestStockEndpoints:
         assert "page" in data
         assert "page_size" in data
         assert len(data["items"]) >= 1
+
+    async def test_stock_list_search_filters_by_ticker(
+        self, client, seed_stock_with_score
+    ):
+        """GET /api/v1/stocks?search= filters by ticker from the DB."""
+        response = await client.get(f"{BASE_URL}/stocks", params={"search": "bbc"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["ticker"] == "BBCA"
+
+    async def test_stock_list_search_filters_by_name(
+        self, client, seed_stock_with_score
+    ):
+        """GET /api/v1/stocks?search= filters by name from the DB."""
+        response = await client.get(f"{BASE_URL}/stocks", params={"search": "telkom"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["ticker"] == "TLKM"
+
+    async def test_stock_list_search_is_case_insensitive(
+        self, client, seed_stock_with_score
+    ):
+        """GET /api/v1/stocks?search= matches names case-insensitively."""
+        response = await client.get(f"{BASE_URL}/stocks", params={"search": "Central"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["ticker"] == "BBCA"
+
+    async def test_stock_list_search_no_match_returns_empty(
+        self, client, seed_stock_with_score
+    ):
+        """GET /api/v1/stocks?search= returns empty items when nothing matches."""
+        response = await client.get(
+            f"{BASE_URL}/stocks", params={"search": "zzz_no_match"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+        assert data["items"] == []
 
 
 class TestScreenerEndpoints:

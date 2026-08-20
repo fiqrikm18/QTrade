@@ -1,14 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Plus, Trash2, Edit, ChevronLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -63,23 +58,46 @@ interface PortfolioSummary {
 
 export default function PortfolioPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
-  const [listState, setListState] = useState<LoadState<PortfolioItem[]>>({ status: "loading" });
-  const [detailState, setDetailState] = useState<LoadState<PortfolioResponse>>({ status: "loading" });
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(
+    null,
+  );
+  const [listState, setListState] = useState<LoadState<PortfolioResponse[]>>({
+    status: "loading",
+  });
+  const [detailState, setDetailState] = useState<LoadState<PortfolioResponse>>({
+    status: "loading",
+  });
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
   const [addPositionOpen, setAddPositionOpen] = useState(false);
   const [deletePositionId, setDeletePositionId] = useState<string | null>(null);
-  const [deletePortfolioId, setDeletePortfolioId] = useState<string | null>(null);
+  const [deletePortfolioId, setDeletePortfolioId] = useState<string | null>(
+    null,
+  );
   const [newPortfolioName, setNewPortfolioName] = useState("");
-  const [newPosition, setNewPosition] = useState<PositionCreate>({ ticker: "", quantity: 0, avg_price: 0 });
-  const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ quantity: number; avg_price: number }>({ quantity: 0, avg_price: 0 });
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [newPosition, setNewPosition] = useState<PositionCreate>({
+    ticker: "",
+    quantity: 0,
+    avg_price: 0,
+  });
+  const [editingPositionId, setEditingPositionId] = useState<string | null>(
+    null,
+  );
+  const [editValues, setEditValues] = useState<{
+    quantity: number;
+    avg_price: number;
+  }>({ quantity: 0, avg_price: 0 });
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const showToast = useCallback((message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  }, []);
+  const showToast = useCallback(
+    (message: string, type: "success" | "error") => {
+      setToast({ message, type });
+      setTimeout(() => setToast(null), 3000);
+    },
+    [],
+  );
 
   const fetchPortfolios = useCallback(async () => {
     setListState({ status: "loading" });
@@ -89,7 +107,8 @@ export default function PortfolioPage() {
     } catch (err) {
       setListState({
         status: "error",
-        message: err instanceof Error ? err.message : "Failed to load portfolios",
+        message:
+          err instanceof Error ? err.message : "Failed to load portfolios",
       });
     }
   }, []);
@@ -102,10 +121,20 @@ export default function PortfolioPage() {
     } catch (err) {
       setDetailState({
         status: "error",
-        message: err instanceof Error ? err.message : "Failed to load portfolio detail",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to load portfolio detail",
       });
     }
   }, []);
+
+  useEffect(() => {
+    async function loadInitial() {
+      await fetchPortfolios();
+    }
+    loadInitial();
+  }, [fetchPortfolios]);
 
   const handleCreatePortfolio = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,13 +146,21 @@ export default function PortfolioPage() {
       setNewPortfolioName("");
       fetchPortfolios();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to create portfolio", "error");
+      showToast(
+        err instanceof Error ? err.message : "Failed to create portfolio",
+        "error",
+      );
     }
   };
 
   const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPosition.ticker || newPosition.quantity <= 0 || newPosition.avg_price <= 0) return;
+    if (
+      !newPosition.ticker ||
+      newPosition.quantity <= 0 ||
+      newPosition.avg_price <= 0
+    )
+      return;
     if (!selectedPortfolioId) return;
     try {
       await addPosition(selectedPortfolioId, newPosition);
@@ -132,7 +169,10 @@ export default function PortfolioPage() {
       setNewPosition({ ticker: "", quantity: 0, avg_price: 0 });
       fetchPortfolioDetail(selectedPortfolioId);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to add position", "error");
+      showToast(
+        err instanceof Error ? err.message : "Failed to add position",
+        "error",
+      );
     }
   };
 
@@ -144,7 +184,10 @@ export default function PortfolioPage() {
       setEditingPositionId(null);
       fetchPortfolioDetail(selectedPortfolioId);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to update position", "error");
+      showToast(
+        err instanceof Error ? err.message : "Failed to update position",
+        "error",
+      );
     }
   };
 
@@ -156,7 +199,10 @@ export default function PortfolioPage() {
       setDeletePositionId(null);
       fetchPortfolioDetail(selectedPortfolioId);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to delete position", "error");
+      showToast(
+        err instanceof Error ? err.message : "Failed to delete position",
+        "error",
+      );
     }
   };
 
@@ -172,7 +218,10 @@ export default function PortfolioPage() {
       }
       fetchPortfolios();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to delete portfolio", "error");
+      showToast(
+        err instanceof Error ? err.message : "Failed to delete portfolio",
+        "error",
+      );
     }
   };
 
@@ -189,25 +238,31 @@ export default function PortfolioPage() {
 
   const startEditPosition = (position: PortfolioItem) => {
     setEditingPositionId(position.ticker);
-    setEditValues({ quantity: position.quantity, avg_price: position.avgPrice });
+    setEditValues({
+      quantity: position.quantity,
+      avg_price: position.avgPrice,
+    });
   };
 
-  const computeSummary = (positions: PortfolioItem[]): PortfolioSummary[] => {
-    const grouped = new Map<string, PortfolioItem[]>();
-    for (const pos of positions) {
-      const key = pos.ticker;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(pos);
-    }
-    return Array.from(grouped.entries()).map(([ticker, positions]) => {
-      const totalMarketValue = positions.reduce((sum, p) => sum + p.marketValue, 0);
-      const totalCost = positions.reduce((sum, p) => sum + p.avgPrice * p.quantity, 0);
+  const computeSummary = (
+    portfolios: PortfolioResponse[],
+  ): PortfolioSummary[] => {
+    return portfolios.map((portfolio) => {
+      const positions = portfolio.positions || [];
+      const totalMarketValue = positions.reduce(
+        (sum, p) => sum + p.marketValue,
+        0,
+      );
+      const totalCost = positions.reduce(
+        (sum, p) => sum + p.avgPrice * p.quantity,
+        0,
+      );
       const totalPnL = positions.reduce((sum, p) => sum + p.pnl, 0);
       const totalPnLPct = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
       return {
-        id: ticker,
-        name: ticker,
-        created_at: "",
+        id: portfolio.id,
+        name: portfolio.name,
+        created_at: portfolio.created_at,
         totalMarketValue,
         totalPnL,
         totalPnLPct,
@@ -268,7 +323,12 @@ export default function PortfolioPage() {
           <CardContent className="pt-6">
             <p className="text-destructive">Failed to load portfolio detail</p>
             <p className="text-sm text-muted">{detailState.message}</p>
-            <Button className="mt-4" onClick={() => selectedPortfolioId && fetchPortfolioDetail(selectedPortfolioId)}>
+            <Button
+              className="mt-4"
+              onClick={() =>
+                selectedPortfolioId && fetchPortfolioDetail(selectedPortfolioId)
+              }
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
             </Button>
@@ -278,10 +338,11 @@ export default function PortfolioPage() {
     );
   }
 
-  const positions = listState.status === "ready" ? listState.data : [];
-  const portfolioDetail = detailState.status === "ready" ? detailState.data : null;
+  const portfolios = listState.status === "ready" ? listState.data : [];
+  const portfolioDetail =
+    detailState.status === "ready" ? detailState.data : null;
 
-  const summaries = computeSummary(positions);
+  const summaries = computeSummary(portfolios);
 
   if (viewMode === "list") {
     return (
@@ -291,7 +352,10 @@ export default function PortfolioPage() {
             <h1 className="text-2xl font-bold">Portfolios</h1>
             <p className="text-muted">Manage your investment portfolios</p>
           </div>
-          <Dialog open={createPortfolioOpen} onOpenChange={setCreatePortfolioOpen}>
+          <Dialog
+            open={createPortfolioOpen}
+            onOpenChange={setCreatePortfolioOpen}
+          >
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="mr-2 h-4 w-4" />
@@ -301,7 +365,9 @@ export default function PortfolioPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create Portfolio</DialogTitle>
-                <DialogDescription>Enter a name for your new portfolio</DialogDescription>
+                <DialogDescription>
+                  Enter a name for your new portfolio
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreatePortfolio}>
                 <div className="grid gap-4 py-4">
@@ -317,7 +383,11 @@ export default function PortfolioPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setCreatePortfolioOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCreatePortfolioOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit">Create</Button>
@@ -333,7 +403,10 @@ export default function PortfolioPage() {
               <EmptyState
                 title="No portfolios yet"
                 description="Create your first portfolio to start tracking investments"
-                action={{ label: "Create Portfolio", onClick: () => setCreatePortfolioOpen(true) }}
+                action={{
+                  label: "Create Portfolio",
+                  onClick: () => setCreatePortfolioOpen(true),
+                }}
                 icon="folder"
               />
             </CardContent>
@@ -352,7 +425,9 @@ export default function PortfolioPage() {
                 <CardContent className="space-y-3 pt-0">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted">Positions</span>
-                    <span className="font-medium">{summary.positionsCount}</span>
+                    <span className="font-medium">
+                      {summary.positionsCount}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -375,7 +450,9 @@ export default function PortfolioPage() {
         {toast && (
           <div
             className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-md text-sm font-medium shadow-lg animate-in slide-in-from-bottom-4 ${
-              toast.type === "success" ? "bg-positive text-white" : "bg-negative text-white"
+              toast.type === "success"
+                ? "bg-positive text-white"
+                : "bg-negative text-white"
             }`}
             role="alert"
           >
@@ -400,7 +477,11 @@ export default function PortfolioPage() {
             <EmptyState
               title="Portfolio not found"
               description="This portfolio may have been deleted"
-              action={{ label: "Back to Portfolios", onClick: handleBackToList, variant: "outline" }}
+              action={{
+                label: "Back to Portfolios",
+                onClick: handleBackToList,
+                variant: "outline",
+              }}
               icon="folder"
             />
           </CardContent>
@@ -411,7 +492,10 @@ export default function PortfolioPage() {
 
   const { id, name, created_at, positions: detailPositions } = portfolioDetail;
   const totalValue = detailPositions.reduce((sum, p) => sum + p.marketValue, 0);
-  const totalCost = detailPositions.reduce((sum, p) => sum + p.avgPrice * p.quantity, 0);
+  const totalCost = detailPositions.reduce(
+    (sum, p) => sum + p.avgPrice * p.quantity,
+    0,
+  );
   const totalPnL = detailPositions.reduce((sum, p) => sum + p.pnl, 0);
   const totalPnLPct = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
 
@@ -425,7 +509,9 @@ export default function PortfolioPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{name}</h1>
-            <p className="text-sm text-muted">Created {new Date(created_at).toLocaleDateString()}</p>
+            <p className="text-sm text-muted">
+              Created {new Date(created_at).toLocaleDateString()}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -439,7 +525,9 @@ export default function PortfolioPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Position</DialogTitle>
-                <DialogDescription>Add a new position to this portfolio</DialogDescription>
+                <DialogDescription>
+                  Add a new position to this portfolio
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddPosition}>
                 <div className="grid gap-4 py-4">
@@ -448,7 +536,12 @@ export default function PortfolioPage() {
                     <Input
                       id="ticker"
                       value={newPosition.ticker}
-                      onChange={(e) => setNewPosition({ ...newPosition, ticker: e.target.value.toUpperCase() })}
+                      onChange={(e) =>
+                        setNewPosition({
+                          ...newPosition,
+                          ticker: e.target.value.toUpperCase(),
+                        })
+                      }
                       placeholder="BBCA"
                       autoFocus
                     />
@@ -461,7 +554,12 @@ export default function PortfolioPage() {
                       min="1"
                       step="1"
                       value={newPosition.quantity}
-                      onChange={(e) => setNewPosition({ ...newPosition, quantity: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNewPosition({
+                          ...newPosition,
+                          quantity: Number(e.target.value),
+                        })
+                      }
                       placeholder="100"
                     />
                   </div>
@@ -473,13 +571,22 @@ export default function PortfolioPage() {
                       min="0.01"
                       step="0.01"
                       value={newPosition.avg_price}
-                      onChange={(e) => setNewPosition({ ...newPosition, avg_price: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNewPosition({
+                          ...newPosition,
+                          avg_price: Number(e.target.value),
+                        })
+                      }
                       placeholder="5000"
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setAddPositionOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setAddPositionOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit">Add Position</Button>
@@ -487,9 +594,16 @@ export default function PortfolioPage() {
               </form>
             </DialogContent>
           </Dialog>
-          <Dialog open={!!deletePortfolioId} onOpenChange={(open) => !open && setDeletePortfolioId(null)}>
+          <Dialog
+            open={!!deletePortfolioId}
+            onOpenChange={(open) => !open && setDeletePortfolioId(null)}
+          >
             <DialogTrigger asChild>
-              <Button variant="destructive" size="sm" onClick={() => setDeletePortfolioId(id)}>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeletePortfolioId(id)}
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Portfolio
               </Button>
@@ -497,12 +611,16 @@ export default function PortfolioPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Delete Portfolio</DialogTitle>
-<DialogDescription>
-                Are you sure you want to delete &ldquo;{name}&rdquo;? This action cannot be undone.
-              </DialogDescription>
+                <DialogDescription>
+                  Are you sure you want to delete &ldquo;{name}&rdquo;? This
+                  action cannot be undone.
+                </DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDeletePortfolioId(null)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setDeletePortfolioId(null)}
+                >
                   Cancel
                 </Button>
                 <Button variant="destructive" onClick={handleDeletePortfolio}>
@@ -520,7 +638,9 @@ export default function PortfolioPage() {
             <CardTitle className="text-sm text-muted">Total Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold tabular-nums">Rp {(totalValue / 1e9).toFixed(2)}B</div>
+            <div className="text-3xl font-bold tabular-nums">
+              Rp {(totalValue / 1e9).toFixed(2)}B
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -531,7 +651,10 @@ export default function PortfolioPage() {
             <div className="text-3xl font-bold tabular-nums">
               <PriceChange changePct={totalPnLPct} />
             </div>
-            <p className="text-sm text-muted">Rp {totalPnL >= 0 ? "+" : ""}{(totalPnL / 1e6).toFixed(1)}M</p>
+            <p className="text-sm text-muted">
+              Rp {totalPnL >= 0 ? "+" : ""}
+              {(totalPnL / 1e6).toFixed(1)}M
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -559,7 +682,10 @@ export default function PortfolioPage() {
             <EmptyState
               title="No positions"
               description="Add your first position to start tracking"
-              action={{ label: "Add Position", onClick: () => setAddPositionOpen(true) }}
+              action={{
+                label: "Add Position",
+                onClick: () => setAddPositionOpen(true),
+              }}
               icon="chart"
               className="py-8"
             />
@@ -584,10 +710,15 @@ export default function PortfolioPage() {
                 <TableBody>
                   {detailPositions.map((position) => {
                     const isEditing = editingPositionId === position.ticker;
-                    const weight = totalValue > 0 ? (position.marketValue / totalValue) * 100 : 0;
+                    const weight =
+                      totalValue > 0
+                        ? (position.marketValue / totalValue) * 100
+                        : 0;
                     return (
                       <TableRow key={position.ticker}>
-                        <TableCell className="font-medium">{position.ticker}</TableCell>
+                        <TableCell className="font-medium">
+                          {position.ticker}
+                        </TableCell>
                         <TableCell>{position.name}</TableCell>
                         <TableCell className="text-right">
                           {isEditing ? (
@@ -596,7 +727,12 @@ export default function PortfolioPage() {
                               min="1"
                               step="1"
                               value={editValues.quantity}
-                              onChange={(e) => setEditValues({ ...editValues, quantity: Number(e.target.value) })}
+                              onChange={(e) =>
+                                setEditValues({
+                                  ...editValues,
+                                  quantity: Number(e.target.value),
+                                })
+                              }
                               className="w-24"
                               autoFocus
                             />
@@ -611,19 +747,27 @@ export default function PortfolioPage() {
                               min="0.01"
                               step="0.01"
                               value={editValues.avg_price}
-                              onChange={(e) => setEditValues({ ...editValues, avg_price: Number(e.target.value) })}
+                              onChange={(e) =>
+                                setEditValues({
+                                  ...editValues,
+                                  avg_price: Number(e.target.value),
+                                })
+                              }
                               className="w-28"
                             />
                           ) : (
                             position.avgPrice.toLocaleString()
                           )}
                         </TableCell>
-                        <TableCell className="text-right">{position.currentPrice.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          {position.currentPrice.toLocaleString()}
+                        </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">
                           Rp {(position.marketValue / 1e6).toFixed(1)}M
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">
-                          {position.pnl >= 0 ? "+" : ""}Rp {(position.pnl / 1e6).toFixed(1)}M
+                          {position.pnl >= 0 ? "+" : ""}Rp{" "}
+                          {(position.pnl / 1e6).toFixed(1)}M
                         </TableCell>
                         <TableCell className="text-right">
                           <PriceChange changePct={position.pnlPct} />
@@ -639,7 +783,9 @@ export default function PortfolioPage() {
                                 <Button
                                   size="xs"
                                   variant="secondary"
-                                  onClick={() => handleUpdatePosition(position.ticker)}
+                                  onClick={() =>
+                                    handleUpdatePosition(position.ticker)
+                                  }
                                 >
                                   Save
                                 </Button>
@@ -664,7 +810,9 @@ export default function PortfolioPage() {
                                   size="xs"
                                   variant="ghost"
                                   className="text-destructive hover:text-destructive hover:bg-negative/10"
-                                  onClick={() => setDeletePositionId(position.ticker)}
+                                  onClick={() =>
+                                    setDeletePositionId(position.ticker)
+                                  }
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
@@ -688,11 +836,15 @@ export default function PortfolioPage() {
             <DialogHeader>
               <DialogTitle>Delete Position</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this position? This action cannot be undone.
+                Are you sure you want to delete this position? This action
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeletePositionId(null)}>
+              <Button
+                variant="outline"
+                onClick={() => setDeletePositionId(null)}
+              >
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeletePosition}>
@@ -706,7 +858,9 @@ export default function PortfolioPage() {
       {toast && (
         <div
           className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-md text-sm font-medium shadow-lg animate-in slide-in-from-bottom-4 ${
-            toast.type === "success" ? "bg-positive text-white" : "bg-negative text-white"
+            toast.type === "success"
+              ? "bg-positive text-white"
+              : "bg-negative text-white"
           }`}
           role="alert"
         >
